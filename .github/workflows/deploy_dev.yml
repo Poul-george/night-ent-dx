@@ -3,10 +3,10 @@ name: Deploy to Development
 on:
   push:
     branches:
-      - main  # または適切なブランチ名
-    # paths:
-    # - prisma/migrations/**
-    # - prisma/schema.prisma
+      - develop
+    paths:
+    - prisma/migrations/**
+    - prisma/schema.prisma
   workflow_dispatch:
 
     
@@ -37,17 +37,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      # - name: Setup Supabase CLI
-      #   uses: supabase/setup-cli@v1
-      #   with:
-      #     version: latest
-
-      # - name: Link Supabase Project
-      #   run: supabase link --project-ref $SUPABASE_PROJECT_ID --debug
-
-      # - name: マイグレーション
-      #   run: supabase db push
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
