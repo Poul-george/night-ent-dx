@@ -34,3 +34,41 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+prismaのマイグレーション作成
+```
+npx prisma migrate dev --name <migration_name> --create-only
+```
+
+prismaのマイグレーション実行
+```
+npx prisma migrate dev
+```
+
+ローカルのsuapbase dbを起動
+```
+supabase start
+```
+
+変更を保存して終了
+```
+supabase stop
+```
+
+supabaseディレクトリ以下のマイグレーションやseed.sqlがローカルDBに反映される
+```
+supabase db reset
+```
+
+リモート環境のDBとローカル環境を同期
+```
+supabase link
+```
+
+リモート環境のDBとローカル環境内容をseed.sqlに同期
+```
+supabase db dump -f supabase/seed.sql
+```
+
+supabase操作DOC
+https://supabase.com/docs/reference/cli/supabase-db-push
