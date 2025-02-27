@@ -43,7 +43,7 @@ jobs:
           version: latest
 
       - name: Link Supabase Project
-        run: supabase link --project-ref env.SUPABASE_PROJECT_ID --debug
+        run: supabase link --project-ref $SUPABASE_PROJECT_ID --debug
 
       - name: マイグレーション
         run: supabase db push
