@@ -65,4 +65,7 @@ jobs:
         run: npx prisma generate
 
       - name: Deploy Prisma Migrations
+        env:
+          DEBUG: "*"
+          DATABASE_URL: ${{ env.DATABASE_URL }}
         run: npx prisma migrate deploy
