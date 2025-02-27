@@ -65,4 +65,4 @@ jobs:
         run: npx prisma generate
 
       - name: Deploy Prisma Migrations
-        run: npx prisma migrate dev
+        run: npx prisma migrate deploy
