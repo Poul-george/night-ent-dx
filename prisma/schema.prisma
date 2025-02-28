@@ -44,7 +44,7 @@ model Cast {
   id            Int      @id @default(autoincrement())
   storeId       Int      @default(0)
   name          String   @db.VarChar(255)
-  salarySystem  Decimal? @db.Decimal(12,2)
+  salarySystem  Int      @default(0) // 0: 月給, 1: 時給
   monthlySalary Decimal? @db.Decimal(12,2)
   hourlyWage    Decimal? @db.Decimal(12,2)
   backSetting   Int      @default(0) // 0: バック設定なし, 1: バック設定あり
