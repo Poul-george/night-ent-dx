@@ -1,5 +1,6 @@
 import { prisma } from '@/client/db'
 import { NextRequest, NextResponse } from 'next/server'
+import { User } from '@/types/type'
 
 export async function GET(
   request: NextRequest,
@@ -7,7 +8,7 @@ export async function GET(
 ) {
   try {
     const id = (await params).id;
-    const user = await prisma.user.findFirst({
+    const userData = await prisma.user.findFirst({
       where: {
         id: Number(id),
       },
@@ -20,11 +21,19 @@ export async function GET(
       },
     })
 
-    if (!user) {
+    if (!userData) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    return NextResponse.json(user)
+    const userRes: User = {
+      id: userData.id,
+      name: userData.name,
+      email: userData.email,
+      storeId: userData.storeId,
+      createdAt: userData.createdAt.toISOString(),
+    }
+
+    return NextResponse.json(userRes)
   } catch (error) {
     console.error('Error fetching user:', error)
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
