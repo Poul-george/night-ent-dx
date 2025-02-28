@@ -16,10 +16,16 @@ export default function DashboardHome() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await fetch('/api/users/1') // ID 1のユーザーを取得
-        if (!response.ok) throw new Error('User not found')
-        const data = await response.json()
-        setUser(data)
+        // まずセッションからuserIdを取得
+        const sessionResponse = await fetch('/api/auth/session')
+        if (!sessionResponse.ok) throw new Error('Session not found')
+        const sessionData = await sessionResponse.json()
+
+        // 取得したuserIdを使ってユーザー情報を取得
+        const userResponse = await fetch(`/api/users/${sessionData.userId}`)
+        if (!userResponse.ok) throw new Error('User not found')
+        const userData = await userResponse.json()
+        setUser(userData)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error fetching user')
       }
