@@ -2,6 +2,7 @@ import { prisma } from '@/client/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import bcrypt from 'bcryptjs'
+import { ReadonlyRequestCookies } from 'next/dist/server/web/spec-extension/adapters/request-cookies'
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,6 +14,7 @@ export async function POST(request: NextRequest) {
       },
       select: {
         id: true,
+        storeId: true,
         password: true,
       },
     })
@@ -25,22 +27,22 @@ export async function POST(request: NextRequest) {
     }
 
     const cookieStore = await cookies();
-    // Cookieの設定
-    cookieStore.set('userId', String(user.id), {
-      path: '/',
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 60 * 60 * 24 // 24時間
-    })
 
-    cookieStore.set('loginTime', new Date().toISOString(), {
-      path: '/',
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 60 * 60 * 24 // 24時間
-    })
+    function setCookie(cookieStore: ReadonlyRequestCookies, name: string, iValue: number, sValue: string) {
+      const value = iValue ? String(iValue) : sValue;
+      cookieStore.set(name, String(value), {
+        path: '/',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 60 * 60 * 24 // 24 hours
+      });
+    }
+
+    // Set cookies
+    setCookie(cookieStore, 'userId', user.id, "");
+    setCookie(cookieStore, 'storeId', user.storeId, "");
+    setCookie(cookieStore, 'loginTime', 0, new Date().toISOString());
 
     return NextResponse.json({ success: true })
   } catch (error) {
