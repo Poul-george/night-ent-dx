@@ -1,6 +1,7 @@
 import { prisma } from '@/client/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { Cast } from '@/types/type'
+import { Prisma } from '@prisma/client'
 
 // バリデーションも入れる
 export async function GET(
@@ -12,7 +13,8 @@ export async function GET(
     const url = new URL(request.url);
     const storeId = url.searchParams.get('storeId');
 
-    const whereCondition: any = {
+    // Prismaの型定義を使用して型安全に
+    const whereCondition: Prisma.CastWhereInput = {
       id: Number(id),
       deletedAt: null,
     };
