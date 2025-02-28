@@ -6,35 +6,7 @@ import { MdKeyboardArrowRight } from "react-icons/md";
 import LogoutDialog from '@/components/LogoutDialog';
 import { logout } from '@/utils/auth';
 import { User, Store } from '@/types/type';
-
-type MenuItem = {
-  label: string;
-  path?: string;
-  subItems?: { label: string; path: string }[];
-};
-
-const menuItems: MenuItem[] = [
-  {
-    label: '日報登録',
-    path: '/dashboard/daily-report'
-  },
-  {
-    label: 'キャスト',
-    subItems: [
-      { label: '登録・編集', path: '/dashboard/cast/manage' }
-    ]
-  },
-  {
-    label: '売上・実績',
-    subItems: [
-      { label: 'キャスト売上・実績', path: '/dashboard/sales/cast' },
-      { label: '店舗売上・実績', path: '/dashboard/sales/store' }
-    ]
-  },
-  {
-    label: '設定'
-  }
-];
+import { menuItems } from '@/const/menuItems';
 
 export default function DashboardLayout({
   children,
