@@ -77,9 +77,12 @@ export default function DashboardLayout({
     <div className="flex min-h-screen">
       <aside className="w-[200px] bg-[#F9F9FC] flex flex-col">
         <div className="mb-4 p-4 border-b">
-          <h2 className="font-bold text-[#454545]">
-            {userName || 'ママ'}
-          </h2>
+          <p className="text-[#757575] text-sm font-bold mb-1">スナックBooM</p>
+          <Link href="/dashboard/home">
+            <h2 className="font-bold text-[#454545] hover:underline cursor-pointer">
+              {userName || 'ママ'}
+            </h2>
+          </Link>
         </div>
 
         <nav className="flex-1">
