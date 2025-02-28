@@ -12,7 +12,7 @@ export const menuItems: MenuItem[] = [
   {
     label: 'キャスト',
     subItems: [
-      { label: '登録・編集', path: '/dashboard/cast/manage' }
+      { label: '一覧', path: '/dashboard/cast/list' }
     ]
   },
   {
