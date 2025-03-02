@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -12,6 +12,25 @@ export default function NewCast() {
   const [hourlyWage, setHourlyWage] = useState('');
   const [backSetting, setBackSetting] = useState(1); // 0: 無し, 1: 有り
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [storeId, setStoreId] = useState<number | null>(null);
+
+  useEffect(() => {
+    // セッションからstoreIdを取得
+    const fetchStoreId = async () => {
+      try {
+        const sessionResponse = await fetch('/api/auth/session');
+        if (!sessionResponse.ok) throw new Error('Failed to fetch session');
+        const sessionData = await sessionResponse.json();
+        setStoreId(sessionData.storeId);
+      } catch (err) {
+        console.error('Error fetching store ID:', err);
+        setError('店舗情報の取得に失敗しました');
+      }
+    };
+
+    fetchStoreId();
+  }, []);
 
   // 金額のフォーマット関数
   const formatCurrency = (value: string): string => {
@@ -43,21 +62,49 @@ export default function NewCast() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError(null);
+
+    if (!storeId) {
+      setError('店舗情報が取得できませんでした');
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
-      // ここにAPIリクエストのコードが入る予定
-      console.log({
+      // リクエストデータを構築
+      const requestData: any = {
         name,
         salarySystem,
-        monthlySalary: salarySystem === 0 ? Number(monthlySalary) : null,
-        hourlyWage: salarySystem === 1 ? Number(hourlyWage) : null,
-        backSetting
+        backSetting,
+        storeId
+      };
+
+      // 給与体系に応じて適切なフィールドのみを追加
+      if (salarySystem === 0 && monthlySalary) {
+        requestData.monthlySalary = Number(monthlySalary);
+      } else if (salarySystem === 1 && hourlyWage) {
+        requestData.hourlyWage = Number(hourlyWage);
+      }
+
+      // APIリクエスト
+      const response = await fetch('/api/casts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'キャストの作成に失敗しました');
+      }
 
       // 成功したら一覧ページに遷移
       router.push('/dashboard/cast/list');
     } catch (error) {
       console.error('Error creating cast:', error);
+      setError(error instanceof Error ? error.message : '予期せぬエラーが発生しました');
       setIsSubmitting(false);
     }
   };
@@ -65,6 +112,12 @@ export default function NewCast() {
   return (
     <div className="p-8">
       <h1 className="text-2xl font-bold text-[#454545] mb-6">キャスト作成</h1>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
+          {error}
+        </div>
+      )}
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 max-w-2xl">
         <form onSubmit={handleSubmit}>
