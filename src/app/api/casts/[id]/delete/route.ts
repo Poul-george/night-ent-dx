@@ -3,17 +3,17 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = Number(params.id);
+    const id = (await params).id;
 
     // 現在の日時を取得
     const now = new Date();
 
     // キャストを論理削除（deletedAtに現在の日時を設定）
     await prisma.cast.update({
-      where: { id },
+      where: { id: Number(id) },
       data: {
         deletedAt: now,
       },

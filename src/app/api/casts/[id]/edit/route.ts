@@ -3,10 +3,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = Number(params.id);
+    const id = (await params).id;
     
     let body;
     try {
@@ -43,7 +43,7 @@ export async function PUT(
 
     // キャストを更新
     const updatedCast = await prisma.cast.update({
-      where: { id },
+      where: { id: Number(id) },
       data: {
         name: body.name,
         salarySystem: Number(body.salarySystem),
