@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Cast } from '@/types/type';
 
 export default function NewCast() {
   const router = useRouter();
@@ -72,11 +73,11 @@ export default function NewCast() {
 
     try {
       // リクエストデータを構築
-      const requestData: any = {
+      const requestData: Partial<Cast> = {
         name,
         salarySystem,
         backSetting,
-        storeId
+        storeId: storeId || 0
       };
 
       // 給与体系に応じて適切なフィールドのみを追加
