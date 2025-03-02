@@ -7,6 +7,7 @@ export async function POST() {
     
     // Cookieを削除
     cookieStore.delete('userId')
+    cookieStore.delete('storeId')
     cookieStore.delete('loginTime')
     
     return NextResponse.json({ success: true })
