@@ -8,29 +8,33 @@ export default function CastList() {
   const [casts, setCasts] = useState<Cast[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [castToDelete, setCastToDelete] = useState<{ id: number; name: string } | null>(null);
+
+  // useEffect内の関数を外に出す
+  const fetchCasts = async () => {
+    try {
+      setLoading(true);
+      // セッションからstoreIdを取得
+      const sessionResponse = await fetch('/api/auth/session');
+      if (!sessionResponse.ok) throw new Error('Failed to fetch session');
+      const sessionData = await sessionResponse.json();
+
+      // storeIdを使ってキャスト一覧を取得
+      const castsResponse = await fetch(`/api/stores/${sessionData.storeId}/casts`);
+      if (!castsResponse.ok) throw new Error('Failed to fetch casts');
+      const castsData = await castsResponse.json();
+      
+      setCasts(castsData);
+    } catch (err) {
+      console.error('Error fetching casts:', err);
+      setError(err instanceof Error ? err.message : '予期せぬエラーが発生しました');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchCasts = async () => {
-      try {
-        // セッションからstoreIdを取得
-        const sessionResponse = await fetch('/api/auth/session');
-        if (!sessionResponse.ok) throw new Error('Failed to fetch session');
-        const sessionData = await sessionResponse.json();
-
-        // storeIdを使ってキャスト一覧を取得
-        const castsResponse = await fetch(`/api/stores/${sessionData.storeId}/casts`);
-        if (!castsResponse.ok) throw new Error('Failed to fetch casts');
-        const castsData = await castsResponse.json();
-        
-        setCasts(castsData);
-      } catch (err) {
-        console.error('Error fetching casts:', err);
-        setError(err instanceof Error ? err.message : '予期せぬエラーが発生しました');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchCasts();
   }, []);
 
@@ -48,6 +52,37 @@ export default function CastList() {
   // バック設定の表示
   const formatBackSetting = (setting: number) => {
     return setting === 0 ? '無し' : '有り';
+  };
+
+  // 削除ダイアログを表示
+  const openDeleteDialog = (castId: number, castName: string) => {
+    setCastToDelete({ id: castId, name: castName });
+    setShowDeleteDialog(true);
+  };
+
+  // 削除処理を実装
+  const handleDelete = async () => {
+    if (!castToDelete) return;
+    
+    try {
+      const response = await fetch(`/api/casts/${castToDelete.id}/delete`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'キャストの削除に失敗しました');
+      }
+      
+      // 削除成功後、キャスト一覧を再取得
+      fetchCasts();
+      // ダイアログを閉じる
+      setShowDeleteDialog(false);
+      setCastToDelete(null);
+    } catch (error) {
+      console.error('Error deleting cast:', error);
+      alert('削除に失敗しました: ' + (error instanceof Error ? error.message : String(error)));
+    }
   };
 
   if (loading) return <div className="p-8">読み込み中...</div>;
@@ -103,13 +138,7 @@ export default function CastList() {
                       </Link>
                       <button 
                         className="px-3 py-1 bg-white text-[#454545] border border-[#757575] rounded font-semibold hover:bg-gray-100 shadow-md hover:shadow-lg transition-all"
-                        onClick={() => {
-                          // 削除確認処理を実装
-                          if (window.confirm(`${cast.name}を削除しますか？`)) {
-                            // 削除APIを呼び出す処理を実装
-                            console.log('削除処理:', cast.id);
-                          }
-                        }}
+                        onClick={() => openDeleteDialog(cast.id, cast.name)}
                       >
                         削除
                       </button>
@@ -121,6 +150,32 @@ export default function CastList() {
           </tbody>
         </table>
       </div>
+
+      {/* 削除確認ダイアログ */}
+      {showDeleteDialog && castToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold mb-4 text-[#454545]">削除の確認</h3>
+            <p className="mb-6">
+              <span className="font-bold">{castToDelete.name}</span>を削除してもよろしいですか？
+            </p>
+            <div className="flex justify-center space-x-3">
+              <button
+                onClick={() => setShowDeleteDialog(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-[#454545] font-medium hover:bg-gray-50"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded-md font-medium hover:bg-red-700"
+              >
+                削除する
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
