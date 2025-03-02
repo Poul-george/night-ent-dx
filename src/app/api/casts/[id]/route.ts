@@ -58,4 +58,4 @@ export async function GET(
     console.error('Error fetching cast:', error)
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
-} 
+}
