@@ -1,6 +1,6 @@
 import { prisma } from '@/client/db'
 import { NextRequest, NextResponse } from 'next/server'
-import { User } from '@/types/type'
+import { Store } from '@/types/type'
 
 export async function GET(
   request: NextRequest,
@@ -8,34 +8,32 @@ export async function GET(
 ) {
   try {
     const id = (await params).id;
-    const userData = await prisma.user.findFirst({
+    const storeData = await prisma.store.findFirst({
       where: {
         id: Number(id),
       },
       select: {
         id: true,
         name: true,
-        email: true,
-        storeId: true,
+        address: true,
         createdAt: true,
       },
     })
 
-    if (!userData) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    if (!storeData) {
+      return NextResponse.json({ error: 'Store not found' }, { status: 404 })
     }
 
-    const userRes: User = {
-      id: userData.id,
-      name: userData.name,
-      email: userData.email,
-      storeId: userData.storeId,
-      createdAt: userData.createdAt.toISOString(),
+    const storeRes: Store = {
+      id: storeData.id,
+      name: storeData.name,
+      address: storeData.address,
+      createdAt: storeData.createdAt.toISOString(),
     }
 
-    return NextResponse.json(userRes)
+    return NextResponse.json(storeRes)
   } catch (error) {
-    console.error('Error fetching user:', error)
+    console.error('Error fetching store:', error)
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 } 

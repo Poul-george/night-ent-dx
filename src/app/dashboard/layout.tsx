@@ -5,47 +5,21 @@ import { useState, useEffect } from 'react';
 import { MdKeyboardArrowRight } from "react-icons/md";
 import LogoutDialog from '@/components/LogoutDialog';
 import { logout } from '@/utils/auth';
-
-type MenuItem = {
-  label: string;
-  path?: string;
-  subItems?: { label: string; path: string }[];
-};
-
-const menuItems: MenuItem[] = [
-  {
-    label: '日報登録',
-    path: '/dashboard/daily-report'
-  },
-  {
-    label: 'キャスト',
-    subItems: [
-      { label: '登録・編集', path: '/dashboard/cast/manage' }
-    ]
-  },
-  {
-    label: '売上・実績',
-    subItems: [
-      { label: 'キャスト売上・実績', path: '/dashboard/sales/cast' },
-      { label: '店舗売上・実績', path: '/dashboard/sales/store' }
-    ]
-  },
-  {
-    label: '設定'
-  }
-];
+import { User, Store } from '@/types/type';
+import { menuItems } from '@/const/menuItems';
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [userName, setUserName] = useState('');
+  const [user, setUser] = useState<User | null>(null);
+  const [store, setStore] = useState<Store | null>(null);
   const [openMenus, setOpenMenus] = useState<number[]>([]);
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
 
   useEffect(() => {
-    const fetchUserInfo = async () => {
+    const fetchUserAndStoreInfo = async () => {
       try {
         const sessionResponse = await fetch('/api/auth/session');
         if (!sessionResponse.ok) throw new Error('Failed to fetch session');
@@ -54,15 +28,18 @@ export default function DashboardLayout({
         const userResponse = await fetch(`/api/users/${sessionData.userId}`);
         if (!userResponse.ok) throw new Error('Failed to fetch user');
         const userData = await userResponse.json();
+        setUser(userData);
         
-        setUserName(userData.name);
+        const storeResponse = await fetch(`/api/stores/${sessionData.storeId}`);
+        if (!storeResponse.ok) throw new Error('Failed to fetch store');
+        const storeData = await storeResponse.json();
+        setStore(storeData);
       } catch (error) {
-        console.error('Error fetching user info:', error);
-        window.location.href = '/';
+        console.error('Error fetching info:', error);
       }
     };
 
-    fetchUserInfo();
+    fetchUserAndStoreInfo();
   }, []);
 
   const toggleMenu = (index: number) => {
@@ -77,9 +54,14 @@ export default function DashboardLayout({
     <div className="flex min-h-screen">
       <aside className="w-[200px] bg-[#F9F9FC] flex flex-col">
         <div className="mb-4 p-4 border-b">
-          <h2 className="font-bold text-[#454545]">
-            {userName || 'ママ'}
-          </h2>
+          <p className="text-[#757575] text-sm font-bold mb-1">
+            {store?.name || '店舗名'}
+          </p>
+          <Link href="/dashboard/home">
+            <h2 className="font-bold text-[#454545] hover:underline cursor-pointer">
+              {user?.name || 'ユーザー名'}
+            </h2>
+          </Link>
         </div>
 
         <nav className="flex-1">
