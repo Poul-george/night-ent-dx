@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { MdKeyboardArrowRight } from "react-icons/md";
+import { MdKeyboardArrowRight, MdChevronLeft, MdChevronRight } from "react-icons/md";
 import LogoutDialog from '@/components/LogoutDialog';
 import { logout } from '@/utils/auth';
 import { User, Store } from '@/types/type';
 import { menuItems } from '@/const/menuItems';
+import { useMenuState } from '@/hooks/useMenuState';
 
 export default function DashboardLayout({
   children,
@@ -17,6 +18,7 @@ export default function DashboardLayout({
   const [store, setStore] = useState<Store | null>(null);
   const [openMenus, setOpenMenus] = useState<number[]>([]);
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+  const { isSidebarCollapsed, toggleSidebar } = useMenuState();
 
   useEffect(() => {
     const fetchUserAndStoreInfo = async () => {
@@ -52,70 +54,91 @@ export default function DashboardLayout({
 
   return (
     <div className="flex min-h-screen">
-      <aside className="w-[200px] bg-[#F9F9FC] flex flex-col">
-        <div className="mb-4 p-4 border-b">
-          <p className="text-[#757575] text-sm font-bold mb-1">
-            {store?.name || '店舗名'}
-          </p>
-          <Link href="/dashboard/home">
-            <h2 className="font-bold text-[#454545] hover:underline cursor-pointer">
-              {user?.name || 'ユーザー名'}
-            </h2>
-          </Link>
-        </div>
-
-        <nav className="flex-1">
-          {menuItems.map((item, index) => (
-            <div key={index}>
-              {item.path ? (
-                <Link 
-                  href={item.path}
-                  className="block px-4 py-3 text-[#454545] text-lg font-bold active:bg-[#F1F1F1]"
-                >
-                  {item.label}
-                </Link>
-              ) : (
-                <button
-                  onClick={() => toggleMenu(index)}
-                  className="w-full flex items-center pl-2 pr-4 py-3 text-[#454545] text-lg font-bold active:bg-[#F1F1F1]"
-                >
-                  <MdKeyboardArrowRight 
-                    size={24}
-                    className={`mr-2 transition-transform duration-200 ${
-                      openMenus.includes(index) ? 'rotate-90' : ''
-                    }`}
-                  />
-                  <span>{item.label}</span>
-                </button>
-              )}
-
-              {item.subItems && (
-                <div className={`overflow-hidden transition-all duration-200 ${
-                  openMenus.includes(index) ? 'max-h-40' : 'max-h-0'
-                }`}>
-                  {item.subItems.map((subItem, subIndex) => (
-                    <Link
-                      key={subIndex}
-                      href={subItem.path}
-                      className="block pl-8 py-2 text-[#757575] active:bg-[#F1F1F1]"
-                    >
-                      {subItem.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
+      <aside className={`bg-[#F9F9FC] flex flex-col relative transition-all duration-300 ${
+        isSidebarCollapsed ? 'w-[50px]' : 'w-[200px]'
+      }`}>
+        {!isSidebarCollapsed && (
+          <>
+            <div className="mb-4 p-4 border-b">
+              <p className="text-[#757575] text-sm font-bold mb-1">
+                {store?.name || '店舗名'}
+              </p>
+              <Link href="/dashboard/home">
+                <h2 className="font-bold text-[#454545] hover:underline cursor-pointer truncate">
+                  {user?.name || 'ユーザー名'}
+                </h2>
+              </Link>
             </div>
-          ))}
-        </nav>
 
-        <div className="p-4 border-t">
-          <button 
-            className="text-[#454545] hover:underline"
-            onClick={() => setIsLogoutDialogOpen(true)}
-          >
-            ログアウト
-          </button>
-        </div>
+            <nav className="flex-1">
+              {menuItems.map((item, index) => (
+                <div key={index}>
+                  {item.path ? (
+                    <Link 
+                      href={item.path}
+                      className="block px-4 py-3 text-[#454545] text-lg font-bold active:bg-[#F1F1F1]"
+                    >
+                      {item.label}
+                    </Link>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => toggleMenu(index)}
+                        className="w-full flex items-center pl-2 pr-4 py-3 text-[#454545] text-lg font-bold active:bg-[#F1F1F1]"
+                      >
+                        <MdKeyboardArrowRight 
+                          size={24}
+                          className={`mr-2 transition-transform duration-200 ${
+                            openMenus.includes(index) ? 'rotate-90' : ''
+                          }`}
+                        />
+                        <span>{item.label}</span>
+                      </button>
+
+                      {item.subItems && (
+                        <div className={`overflow-hidden transition-all duration-200 ${
+                          openMenus.includes(index) ? 'max-h-40' : 'max-h-0'
+                        }`}>
+                          {item.subItems.map((subItem, subIndex) => (
+                            <Link
+                              key={subIndex}
+                              href={subItem.path}
+                              className="block pl-8 py-2 text-[#757575] active:bg-[#F1F1F1]"
+                            >
+                              {subItem.label}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              ))}
+            </nav>
+
+            <div className="p-4 border-t">
+              <button 
+                className="text-[#454545] hover:underline"
+                onClick={() => setIsLogoutDialogOpen(true)}
+              >
+                ログアウト
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* サイドバー開閉ボタン */}
+        <button
+          onClick={toggleSidebar}
+          className="absolute top-1/2 -right-4 transform -translate-y-1/2 bg-white border border-gray-300 rounded-full p-1 shadow-md text-[#454545] hover:bg-gray-50 z-10"
+          aria-label={isSidebarCollapsed ? "メニューを開く" : "メニューを閉じる"}
+        >
+          {isSidebarCollapsed ? (
+            <MdChevronRight size={20} />
+          ) : (
+            <MdChevronLeft size={20} />
+          )}
+        </button>
       </aside>
 
       <main className="flex-1 bg-white">
