@@ -28,7 +28,7 @@ export async function GET(
       id: storeData.id,
       name: storeData.name,
       address: storeData.address,
-      createdAt: storeData.createdAt.toISOString(),
+      createdAt: storeData.createdAt,
     }
 
     return NextResponse.json(storeRes)
