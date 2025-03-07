@@ -6,6 +6,7 @@ import React from 'react';
 import { useMenuState } from '@/hooks/useMenuState';
 import { CastDailyPerformance } from '@/types/type';
 import CastSelectModal from './CastSelectModal';
+import DeletePerformanceDialog from './DeletePerformanceDialog';
 
 type DailyReportTableProps = {
   date: { year: number; month: number; day: number };
@@ -16,6 +17,10 @@ export default function DailyReportTable({ date, storeId }: DailyReportTableProp
   const { isSidebarCollapsed } = useMenuState(); // サイドバーの状態を取得
   const [castDailyPerformances, setCastDailyPerformances] = useState<CastDailyPerformance[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // 削除ダイアログ用のステートを追加
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [performanceToDelete, setPerformanceToDelete] = useState<CastDailyPerformance | null>(null);
   
   useEffect(() => {
     const formattedDate = `${date.year}-${String(date.month).padStart(2, '0')}-${String(
@@ -197,16 +202,54 @@ export default function DailyReportTable({ date, storeId }: DailyReportTableProp
     handleInputChange(castId, field, numberValue);
   };
 
-  // キャスト削除
-  const handleDeleteCast = (castId: number) => {
-    setCastDailyPerformances(prevCastDailyPerformances => prevCastDailyPerformances.filter(castDailyPerformance => castDailyPerformance.id !== castId));
+  // 削除ボタンのハンドラー
+  const handleDeleteClick = (performance: CastDailyPerformance) => {
+    setPerformanceToDelete(performance);
+    setIsDeleteDialogOpen(true);
+  };
+
+  // 削除成功時のハンドラー
+  const handleDeleteSuccess = () => {
+    // 削除されたパフォーマンスを状態から除外
+    if (performanceToDelete) {
+      setCastDailyPerformances(prevPerformances => 
+        prevPerformances.filter(p => p.id !== performanceToDelete.id)
+      );
+    }
   };
 
   // 保存処理
-  const handleSave = () => {
-    console.log('保存データ:', castDailyPerformances);
-    // ここにAPIリクエストを実装
-    alert('保存しました');
+  const handleSave = async () => {
+    try {
+      const formattedDate = `${date.year}-${String(date.month).padStart(2, '0')}-${String(
+        date.day
+      ).padStart(2, '0')}`;
+      
+      const response = await fetch(`/api/daily-report/${formattedDate}?storeId=${storeId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          performances: castDailyPerformances
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save daily report');
+      }
+      alert('保存しました');
+      
+      // 保存後に最新データを再取得
+      const refreshResponse = await fetch(`/api/daily-report/${formattedDate}?storeId=${storeId}`);
+      if (refreshResponse.ok) {
+        const refreshedData = await refreshResponse.json();
+        setCastDailyPerformances(refreshedData);
+      }
+    } catch (error) {
+      console.error('Error saving daily report:', error);
+      alert('保存に失敗しました');
+    }
   };
 
   // 数値のフォーマット（カンマ区切り）
@@ -237,7 +280,7 @@ export default function DailyReportTable({ date, storeId }: DailyReportTableProp
                       <div className="flex items-center h-full">
                         <span className="w-full text-[14px] text-[#454545]">{castDailyPerformance.castName}</span>
                         <button
-                          onClick={() => handleDeleteCast(castDailyPerformance.id)}
+                          onClick={() => handleDeleteClick(castDailyPerformance)}
                           className="ml-2 text-[#454545] hover:text-[#353535]"
                         >
                           <FaTrash size={14} />
@@ -491,6 +534,15 @@ export default function DailyReportTable({ date, storeId }: DailyReportTableProp
         setCastDailyPerformances={setCastDailyPerformances}
         storeId={storeId}
         castDailyPerformances={castDailyPerformances}
+      />
+      
+      {/* 削除確認ダイアログ */}
+      <DeletePerformanceDialog
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        performance={performanceToDelete}
+        onDeleteSuccess={handleDeleteSuccess}
+        date={date}
       />
     </>
   );
