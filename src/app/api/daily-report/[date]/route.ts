@@ -29,7 +29,7 @@ export async function GET(
         cast: true,
       },
       orderBy: {
-        castId: 'desc',
+        castId: 'asc',
       },
     });
     
@@ -159,7 +159,7 @@ export async function POST(
         // 既存のパフォーマンスデータを更新または新規作成
         return prisma.castDailyPerformance.upsert({
           where: {
-            id: performance.id > 0 ? performance.id : -1, // 新規の場合は存在しないIDを指定
+            id: performance.id > 0 ? performance.id : 0, // 新規の場合は存在しないIDを指定
           },
           update: {
             startTime: performance.startTime,
@@ -220,5 +220,50 @@ export async function POST(
   } catch (error) {
     console.error('Error saving daily report:', error);
     return NextResponse.json({ error: 'Failed to save daily report' }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ date: string }> }
+) {
+  try {
+    const { date } = await params;
+    const { searchParams } = new URL(request.url);
+    const storeId = searchParams.get('storeId');
+    const castId = searchParams.get('castId');
+    
+    if (!storeId || !castId) {
+      return NextResponse.json({ error: 'Store ID and Cast ID are required' }, { status: 400 });
+    }
+    
+    // 日付をパース
+    const performanceDate = new Date(date);
+    
+    // 論理削除（deletedAtを現在時刻に設定）
+    const deletedPerformance = await prisma.castDailyPerformance.updateMany({
+      where: {
+        storeId: Number(storeId),
+        castId: Number(castId),
+        performanceDate,
+        deletedAt: null, // まだ削除されていないレコードのみ
+      },
+      data: {
+        deletedAt: new Date(), // 現在時刻を設定
+      },
+    });
+    
+    if (deletedPerformance.count === 0) {
+      return NextResponse.json({ error: 'Performance record not found' }, { status: 404 });
+    }
+    
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Performance record deleted successfully',
+      count: deletedPerformance.count
+    });
+  } catch (error) {
+    console.error('Error deleting daily report:', error);
+    return NextResponse.json({ error: 'Failed to delete daily report' }, { status: 500 });
   }
 } 
