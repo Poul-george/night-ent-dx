@@ -4,10 +4,10 @@ import { CastDailyPerformance } from '@/types/type';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { date: string } }
+  { params }: { params: Promise<{ date: string }> }
 ) {
   try {
-    const { date } = params;
+    const { date } = await params;
     const { searchParams } = new URL(request.url);
     const storeId = searchParams.get('storeId');
     
@@ -138,10 +138,10 @@ function minutesToTime(totalMinutes: number): string {
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { date: string } }
+  { params }: { params: Promise<{ date: string }> }
 ) {
   try {
-    const { date } = params;
+    const { date } = await params;
     const { performances } = await request.json();
     const { searchParams } = new URL(request.url);
     const storeId = searchParams.get('storeId');
