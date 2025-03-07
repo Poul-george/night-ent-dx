@@ -5,6 +5,7 @@ import { FaTrash } from 'react-icons/fa';
 import React from 'react';
 import { useMenuState } from '@/hooks/useMenuState';
 import { CastDailyPerformance } from '@/types/type';
+import CastSelectModal from './CastSelectModal';
 
 type DailyReportTableProps = {
   date: { year: number; month: number; day: number };
@@ -12,13 +13,10 @@ type DailyReportTableProps = {
 };
 
 export default function DailyReportTable({ date, storeId }: DailyReportTableProps) {
-  // サイドバーの状態を取得
-  const { isSidebarCollapsed } = useMenuState();
-
-  // キャスト実績一覧（初期状態は空、APIから取得）
+  const { isSidebarCollapsed } = useMenuState(); // サイドバーの状態を取得
   const [castDailyPerformances, setCastDailyPerformances] = useState<CastDailyPerformance[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
-  // 取得するため、日付を "yyyy-mm-dd" の形式に整形して fetch API を呼び出す
   useEffect(() => {
     const formattedDate = `${date.year}-${String(date.month).padStart(2, '0')}-${String(
       date.day
@@ -79,7 +77,6 @@ export default function DailyReportTable({ date, storeId }: DailyReportTableProp
     
     // 基本勤務時間（分）
     const baseWorkMinutes = endMinutes - startMinutes;
-    
     // 時間外を加算
     const totalWorkMinutes = baseWorkMinutes + overtime;
     
@@ -203,41 +200,6 @@ export default function DailyReportTable({ date, storeId }: DailyReportTableProp
   // キャスト削除
   const handleDeleteCast = (castId: number) => {
     setCastDailyPerformances(prevCastDailyPerformances => prevCastDailyPerformances.filter(castDailyPerformance => castDailyPerformance.id !== castId));
-  };
-
-  // キャスト追加
-  const handleAddCast = () => {
-    const newId = Math.max(0, ...castDailyPerformances.map(castDailyPerformance => castDailyPerformance.id)) + 1;
-    const newCast: CastDailyPerformance = {
-      id: newId,
-      castId: 0, // 実際には選択したキャストのIDが入る
-      storeId: storeId,
-      performanceDate: new Date(),
-      castName: '新規キャスト',
-      startTime: '00:00',
-      endTime: '00:00',
-      overtime: 0,
-      workHours: '00:00', // 自動計算
-      hourlyRate: 0,
-      timeReward: 0, // 自動計算
-      welfareCost: 0,
-      dailyPayment: 0,
-      totalPayment: 0, // 自動計算
-      remainingPayment: 0, // 自動計算
-      absenceDeduction: 0,
-      soriDeduction: 0,
-      tardinessDeduction: 0,
-      otherDeductions: 0,
-      totalDeduction: 0,
-      drinkSubtotal: 0, //バック
-      drinkSubtotalBack: 0,
-      bottleSubtotal: 0,
-      bottleSubtotalBack: 0,
-      foodSubtotal: 0,
-      foodSubtotalBack: 0,
-      bonus: 0,
-    };
-    setCastDailyPerformances(prevCastDailyPerformances => [...prevCastDailyPerformances, newCast]);
   };
 
   // 保存処理
@@ -515,12 +477,21 @@ export default function DailyReportTable({ date, storeId }: DailyReportTableProp
           保存する
         </button>
         <button
-          onClick={handleAddCast}
+          onClick={() => setIsModalOpen(true)}
           className="px-4 py-2 bg-white text-[#454545] border border-[#454545] rounded-md font-medium hover:bg-gray-50 text-[14px]"
         >
           キャスト項目を追加
         </button>
       </div>
+      
+      {/* キャスト選択モーダル */}
+      <CastSelectModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        setCastDailyPerformances={setCastDailyPerformances}
+        storeId={storeId}
+        castDailyPerformances={castDailyPerformances}
+      />
     </>
   );
-} 
+}
