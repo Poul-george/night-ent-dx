@@ -63,8 +63,12 @@ export default function CastSelectModal({
   // 追加ボタンハンドラー - このコンポーネント内で処理を完結
   const handleAddClick = () => {
     if (selectedCast) {
-      // 新しいIDを生成（既存の最大ID + 1）
-      const newId = Math.max(0, ...castDailyPerformances.map(performance => performance.id)) + 1;
+      // 既存のIDの中で最小の値を見つけ -1する
+      const newId = (castDailyPerformances.length > 0 
+        ? Math.min(...castDailyPerformances.map(performance => performance.id)) > 0
+          ? -1
+          : Math.min(...castDailyPerformances.map(performance => performance.id)) - 1
+        : 0 - 1);
       
       // 新しいキャスト実績データを作成
       const newCast: CastDailyPerformance = {
