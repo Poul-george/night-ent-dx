@@ -69,7 +69,7 @@ export default function DailyReportTable({ date, storeId }: DailyReportTableProp
 
   // 勤務時間を計算する関数
   const calculateWorkHours = (startTime: string, endTime: string, overtime: number) => {
-    let startMinutes = timeToMinutes(startTime);
+    const startMinutes = timeToMinutes(startTime);
     let endMinutes = timeToMinutes(endTime);
     
     // 終了時間が開始時間より前の場合、翌日とみなす
@@ -122,7 +122,7 @@ export default function DailyReportTable({ date, storeId }: DailyReportTableProp
   const handleOvertimeInput = (castId: number, value: string) => {
     // 数値のみ許可（マイナス記号も許可）
     const numericValue = value.replace(/[^\d-]/g, '');
-    let overtime = numericValue ? parseInt(numericValue, 10) : 0;
+    const overtime = numericValue ? parseInt(numericValue, 10) : 0;
 
     handleInputChange(castId, 'overtime', overtime);
   };

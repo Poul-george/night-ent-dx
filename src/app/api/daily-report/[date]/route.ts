@@ -155,7 +155,7 @@ export async function POST(
     
     // トランザクションで一括更新
     const result = await prisma.$transaction(
-      performances.map((performance: any) => {
+      performances.map((performance: CastDailyPerformance) => {
         // 既存のパフォーマンスデータを更新または新規作成
         return prisma.castDailyPerformance.upsert({
           where: {
