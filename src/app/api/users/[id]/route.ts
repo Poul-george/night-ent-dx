@@ -30,7 +30,7 @@ export async function GET(
       name: userData.name,
       email: userData.email,
       storeId: userData.storeId,
-      createdAt: userData.createdAt.toISOString(),
+      createdAt: userData.createdAt,
     }
 
     return NextResponse.json(userRes)

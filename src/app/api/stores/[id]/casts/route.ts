@@ -36,7 +36,7 @@ export async function GET(
       monthlySalary: cast.monthlySalary ? Number(cast.monthlySalary) : null,
       hourlyWage: cast.hourlyWage ? Number(cast.hourlyWage) : null,
       backSetting: cast.backSetting,
-      createdAt: cast.createdAt.toISOString(),
+      createdAt: cast.createdAt,
     }))
 
     console.log(casts)
