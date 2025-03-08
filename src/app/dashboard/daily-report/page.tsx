@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import DateSelector from '@/components/common/DateSelector';
-import DailyReportTable from '@/components/daily-report/DailyReportTable';
+import DailyReportTabs from '@/components/daily-report/DailyReportTabs';
 
 export default function DailyReport() {
   // 現在の日付を初期値として設定
@@ -65,7 +65,8 @@ export default function DailyReport() {
           onChange={handleDateChange} 
         />
       </div>
-      <DailyReportTable date={selectedDate} storeId={storeId} />
+      
+      <DailyReportTabs date={selectedDate} storeId={storeId} />
     </div>
   );
 } 
