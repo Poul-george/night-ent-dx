@@ -50,7 +50,7 @@ export async function GET(
       monthlySalary: castData.monthlySalary ? Number(castData.monthlySalary) : null,
       hourlyWage: castData.hourlyWage ? Number(castData.hourlyWage) : null,
       backSetting: castData.backSetting,
-      createdAt: castData.createdAt.toISOString(),
+      createdAt: castData.createdAt,
     }
 
     return NextResponse.json(cast)

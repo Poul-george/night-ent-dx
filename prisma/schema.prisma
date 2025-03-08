@@ -36,6 +36,10 @@ model Store {
   updatedAt  DateTime @default(now()) @updatedAt
   deletedAt  DateTime?
 
+  // リレーション
+  casts             Cast[]
+  performances      CastDailyPerformance[]
+
   @@index([name])
   @@map("stores")
 }
@@ -52,7 +56,54 @@ model Cast {
   updatedAt     DateTime @default(now()) @updatedAt
   deletedAt     DateTime?
 
+  // リレーション
+  store             Store    @relation(fields: [storeId], references: [id])
+  performances      CastDailyPerformance[]
+
   @@index([storeId], name: "idx_casts_store_id")
   @@index([name], name: "idx_casts_name")
   @@map("casts")
+}
+
+model CastDailyPerformance {
+  id                Int      @id @default(autoincrement())
+  castId            Int
+  storeId           Int
+  performanceDate   DateTime @db.Date
+
+  // 勤怠関連
+  startTime         String @default("00:00")
+  endTime           String @default("00:00")
+  overtime          Decimal @db.Decimal(5,2) @default(0)
+
+  // 各種バック・ボーナス関連
+  drinkSubtotal       Decimal @db.Decimal(10,2) @default(0)
+  drinkSubtotalBack   Decimal @db.Decimal(10,2) @default(0)
+  bottleSubtotal      Decimal @db.Decimal(10,2) @default(0)
+  bottleSubtotalBack  Decimal @db.Decimal(10,2) @default(0)
+  foodSubtotal        Decimal @db.Decimal(10,2) @default(0)
+  foodSubtotalBack    Decimal @db.Decimal(10,2) @default(0)
+  bonus               Decimal @db.Decimal(10,2) @default(0)
+
+  // 日払い支給額関連
+  welfareCost         Decimal @db.Decimal(10,2) @default(0)
+  dailyPayment        Decimal @db.Decimal(10,2) @default(0)
+
+  // マイナス関連
+  absenceDeduction    Decimal @db.Decimal(10,2) @default(0)
+  soriDeduction       Decimal @db.Decimal(10,2) @default(0)
+  tardinessDeduction  Decimal @db.Decimal(10,2) @default(0)
+  otherDeductions     Decimal @db.Decimal(10,2) @default(0)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now()) @updatedAt
+  deletedAt         DateTime?
+
+  // リレーション
+  cast              Cast    @relation(fields: [castId], references: [id])
+  store             Store   @relation(fields: [storeId], references: [id])
+
+  @@index([storeId, performanceDate], name: "idx_store_performance_date")
+  @@index([castId, storeId, performanceDate], name: "idx_cast_store_performance_date")
+  @@map("cast_daily_performance")
 }
