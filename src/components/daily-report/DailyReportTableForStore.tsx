@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useMenuState } from '@/hooks/useMenuState';
 import { CastDailyPerformance, StoreDailyPerformance } from '@/types/type';
 
@@ -14,7 +14,7 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
   const { isSidebarCollapsed } = useMenuState();
   
   // 店舗日報データのステート
-  const [storeReport, setStoreReport] = useState<StoreDailyPerformance>({
+  const [dailyStoreReport, setDailyStoreReport] = useState<StoreDailyPerformance>({
     id: 0,
     storeId: storeId,
     performanceDate: new Date(`${date.year}-${date.month}-${date.day}`),
@@ -50,8 +50,8 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
     transferredCash: 0
   });
   
-  // キャストデータが変更されたときに集計を更新
-  useEffect(() => {
+  // 計算ロジックを共通化した関数
+  const calculateReportValues = useCallback((reportData: StoreDailyPerformance) => {
     // キャスト売上合計の計算
     const castSalesTotal = castDailyPerformances.reduce((sum, cast) => {
       return sum + cast.drinkSubtotal + cast.bottleSubtotal + cast.foodSubtotal;
@@ -78,51 +78,72 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
       return sum;
     }, 0);
     
-    // 人件費率の計算
-    const laborCostRatio = castSalesTotal > 0 ? Math.round((castSalaryTotal / castSalesTotal) * 100) : 0;
+    // 総売上の計算（現金売上、カード売上、売掛金の合計）
+    const totalSales = reportData.cashSales + reportData.cardSales + reportData.receivables;
+    
+    // 人件費率の計算 (小数点第一位まで、第二位を四捨五入)
+    const laborCostRatio = castSalesTotal > 0 ? Math.round((castSalaryTotal / castSalesTotal) * 1000) / 10 : 0;
     
     // 粗利益の計算
-    const grossProfit = castSalesTotal - castSalaryTotal;
+    const grossProfit = totalSales - reportData.miscExpenses;
     
-    // 粗利益率の計算
-    const grossProfitMargin = castSalesTotal > 0 ? Math.round((grossProfit / castSalesTotal) * 100) : 0;
+    // 粗利益率の計算 (小数点第一位まで、第二位を四捨五入)
+    const grossProfitMargin = totalSales > 0 ? Math.round((grossProfit / totalSales) * 1000) / 10 : 0;
     
     // 営業利益の計算
-    const operatingProfit = grossProfit - (storeReport.miscExpenses + storeReport.otherExpenses);
+    const operatingProfit = grossProfit - (reportData.otherExpenses + castSalaryTotal);
     
-    // 営業利益率の計算
-    const operatingProfitMargin = castSalesTotal > 0 ? Math.round((operatingProfit / castSalesTotal) * 100) : 0;
+    // 営業利益率の計算 (小数点第一位まで、第二位を四捨五入)
+    const operatingProfitMargin = totalSales > 0 ? Math.round((operatingProfit / totalSales) * 1000) / 10 : 0;
     
-    // 店舗レポートの更新
-    setStoreReport(prev => ({
-      ...prev,
+    // 客単価の計算
+    const averageSpendPerCustomer = reportData.customerCount > 0 
+      ? Math.round(castSalesTotal / reportData.customerCount) 
+      : 0;
+    
+    // 計算結果をオブジェクトとして返す
+    return {
       castSales: castSalesTotal,
       castSalary: castSalaryTotal,
       castDailyPayment: castDailyPaymentTotal,
       employeeDailyPayment: staffDailyPaymentTotal,
       laborCostRatio: laborCostRatio,
+      totalSales: totalSales,
       grossProfit: grossProfit,
       grossProfitMargin: grossProfitMargin,
       operatingProfit: operatingProfit,
       operatingProfitMargin: operatingProfitMargin,
-      totalSales: prev.cashSales + prev.cardSales + prev.receivables // 現金売上とカード売上と売掛金の合計
-    }));
-  }, [castDailyPerformances, storeReport.miscExpenses, storeReport.otherExpenses]);
+      averageSpendPerCustomer: averageSpendPerCustomer
+    };
+  }, [castDailyPerformances]);
+  
+  // 初期化と再計算
+  const updateDailyStoreReport = useCallback(() => {
+    setDailyStoreReport(prev => {
+      const calculatedValues = calculateReportValues(prev);
+      return { ...prev, ...calculatedValues };
+    });
+  }, [calculateReportValues]);
+  
+  // 初期化
+  useEffect(() => {
+    updateDailyStoreReport();
+  }, []);
   
   // 入力ハンドラー
   const handleInputChange = (field: keyof StoreDailyPerformance, value: string) => {
     const numericValue = value.replace(/[^\d]/g, '');
     const numberValue = numericValue ? parseInt(numericValue, 10) : 0;
     
-    setStoreReport(prev => {
+    setDailyStoreReport(prev => {
+      // 更新された値を含む新しいオブジェクトを作成
       const updated = { ...prev, [field]: numberValue };
       
-      // 客単価の自動計算
-      if (field === 'customerCount' && updated.customerCount > 0) {
-        updated.averageSpendPerCustomer = Math.round(updated.castSales / updated.customerCount);
-      }
+      // 共通の計算ロジックを使用して値を計算
+      const calculatedValues = calculateReportValues(updated);
       
-      return updated;
+      // 更新された値と計算結果を組み合わせて返す
+      return { ...updated, ...calculatedValues };
     });
   };
   
@@ -136,7 +157,7 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(storeReport),
+        body: JSON.stringify(dailyStoreReport),
       });
       
       if (!response.ok) {
@@ -157,7 +178,7 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
   
   // パーセント表示用フォーマット
   const formatPercent = (num: number) => {
-    return `${num}%`;
+    return `${num.toFixed(1)}%`;
   };
   
   // 入力フィールドのスタイル
@@ -182,7 +203,7 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
                 <tbody>
                   <tr>
                     <td className="border border-gray-300 py-2 px-3">総売上</td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(storeReport.totalSales)}</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(dailyStoreReport.totalSales)}</td>
                     <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(0)}</td>
                   </tr>
                   <tr>
@@ -192,7 +213,7 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
                         <span className="text-[#454545] mr-1">¥</span>
                         <input
                           type="text"
-                          value={formatNumber(storeReport.cashSales)}
+                          value={formatNumber(dailyStoreReport.cashSales)}
                           onChange={(e) => handleInputChange('cashSales', e.target.value)}
                           className={inputStyle}
                         />
@@ -207,7 +228,7 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
                         <span className="text-[#454545] mr-1">¥</span>
                         <input
                           type="text"
-                          value={formatNumber(storeReport.cardSales)}
+                          value={formatNumber(dailyStoreReport.cardSales)}
                           onChange={(e) => handleInputChange('cardSales', e.target.value)}
                           className={inputStyle}
                         />
@@ -222,7 +243,7 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
                         <span className="text-[#454545] mr-1">¥</span>
                         <input
                           type="text"
-                          value={formatNumber(storeReport.receivablesCollection)}
+                          value={formatNumber(dailyStoreReport.receivablesCollection)}
                           onChange={(e) => handleInputChange('receivablesCollection', e.target.value)}
                           className={inputStyle}
                         />
@@ -237,7 +258,7 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
                         <span className="text-[#454545] mr-1">¥</span>
                         <input
                           type="text"
-                          value={formatNumber(storeReport.receivables)}
+                          value={formatNumber(dailyStoreReport.receivables)}
                           onChange={(e) => handleInputChange('receivables', e.target.value)}
                           className={inputStyle}
                         />
@@ -268,7 +289,7 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
                         <span className="text-[#454545] mr-1">¥</span>
                         <input
                           type="text"
-                          value={formatNumber(storeReport.miscExpenses)}
+                          value={formatNumber(dailyStoreReport.miscExpenses)}
                           onChange={(e) => handleInputChange('miscExpenses', e.target.value)}
                           className={inputStyle}
                         />
@@ -283,7 +304,7 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
                         <span className="text-[#454545] mr-1">¥</span>
                         <input
                           type="text"
-                          value={formatNumber(storeReport.otherExpenses)}
+                          value={formatNumber(dailyStoreReport.otherExpenses)}
                           onChange={(e) => handleInputChange('otherExpenses', e.target.value)}
                           className={inputStyle}
                         />
@@ -293,12 +314,12 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
                   </tr>
                   <tr>
                     <td className="border border-gray-300 py-2 px-3">キャスト日払</td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(storeReport.castDailyPayment)}</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(dailyStoreReport.castDailyPayment)}</td>
                     <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(0)}</td>
                   </tr>
                   <tr>
                     <td className="border border-gray-300 py-2 px-3">社員日払い</td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(storeReport.employeeDailyPayment)}</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(dailyStoreReport.employeeDailyPayment)}</td>
                     <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(0)}</td>
                   </tr>
                 </tbody>
@@ -321,17 +342,17 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
                 <tbody>
                   <tr>
                     <td className="border border-gray-300 py-2 px-3">キャスト売上</td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(storeReport.castSales)}</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(dailyStoreReport.castSales)}</td>
                     <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(0)}</td>
                   </tr>
                   <tr>
                     <td className="border border-gray-300 py-2 px-3">キャスト給与</td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(storeReport.castSalary)}</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(dailyStoreReport.castSalary)}</td>
                     <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(0)}</td>
                   </tr>
                   <tr>
                     <td className="border border-gray-300 py-2 px-3">人件費率</td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">{formatPercent(storeReport.laborCostRatio)}</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">{formatPercent(dailyStoreReport.laborCostRatio)}</td>
                     <td className="border border-gray-300 py-2 px-3 text-right">{formatPercent(0)}</td>
                   </tr>
                   <tr>
@@ -340,7 +361,7 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
                       <div className="flex items-center justify-end">
                         <input
                           type="text"
-                          value={formatNumber(storeReport.setCount)}
+                          value={formatNumber(dailyStoreReport.setCount)}
                           onChange={(e) => handleInputChange('setCount', e.target.value)}
                           className={inputStyle}
                         />
@@ -355,7 +376,7 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
                       <div className="flex items-center justify-end">
                         <input
                           type="text"
-                          value={formatNumber(storeReport.customerCount)}
+                          value={formatNumber(dailyStoreReport.customerCount)}
                           onChange={(e) => handleInputChange('customerCount', e.target.value)}
                           className={inputStyle}
                         />
@@ -366,28 +387,28 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
                   </tr>
                   <tr>
                     <td className="border border-gray-300 py-2 px-3">客単価</td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(storeReport.averageSpendPerCustomer)}</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(dailyStoreReport.averageSpendPerCustomer)}</td>
                     <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(0)}</td>
                   </tr>
                   <tr>
                     <td className="border border-gray-300 py-2 px-3">粗利益</td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(storeReport.grossProfit)}</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(dailyStoreReport.grossProfit)}</td>
                     <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(0)}</td>
                   </tr>
                   <tr>
                     <td className="border border-gray-300 py-2 px-3">粗利益率</td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">{formatPercent(storeReport.grossProfitMargin)}</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">{formatPercent(dailyStoreReport.grossProfitMargin)}</td>
                     <td className="border border-gray-300 py-2 px-3 text-right">{formatPercent(0)}</td>
                   </tr>
                   <tr>
                     <td className="border border-gray-300 py-2 px-3">営業利益</td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(storeReport.operatingProfit)}</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(dailyStoreReport.operatingProfit)}</td>
                     <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(0)}</td>
                   </tr>
                   <tr>
                     <td className="border border-gray-300 py-2 px-3">営業利益率</td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">{formatPercent(storeReport.operatingProfitMargin)}</td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">{formatPercent(42)}</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">{formatPercent(dailyStoreReport.operatingProfitMargin)}</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">{formatPercent(0)}</td>
                   </tr>
                 </tbody>
               </table>
@@ -412,7 +433,7 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
                         <span className="text-[#454545] mr-1">¥</span>
                         <input
                           type="text"
-                          value={formatNumber(storeReport.actualCash)}
+                          value={formatNumber(dailyStoreReport.actualCash)}
                           onChange={(e) => handleInputChange('actualCash', e.target.value)}
                           className={inputStyle}
                         />
@@ -427,7 +448,7 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
                         <span className="text-[#454545] mr-1">¥</span>
                         <input
                           type="text"
-                          value={formatNumber(storeReport.coinCarryover)}
+                          value={formatNumber(dailyStoreReport.coinCarryover)}
                           onChange={(e) => handleInputChange('coinCarryover', e.target.value)}
                           className={inputStyle}
                         />
@@ -442,7 +463,7 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
                         <span className="text-[#454545] mr-1">¥</span>
                         <input
                           type="text"
-                          value={formatNumber(storeReport.transferredCash)}
+                          value={formatNumber(dailyStoreReport.transferredCash)}
                           onChange={(e) => handleInputChange('transferredCash', e.target.value)}
                           className={inputStyle}
                         />
@@ -470,4 +491,4 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
       </div>
     </>
   );
-} 
+}
