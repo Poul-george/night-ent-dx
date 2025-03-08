@@ -122,8 +122,6 @@ model StoreDailyPerformance {
   // 出金項目 (Outgoing Funds)
   miscExpenses          Decimal  @default(0) @db.Decimal(12,2)
   otherExpenses         Decimal  @default(0) @db.Decimal(12,2)
-  castDailyPayment      Decimal  @default(0) @db.Decimal(12,2)
-  employeeDailyPayment  Decimal  @default(0) @db.Decimal(12,2)
 
   // 売上関連 (Sales Related)
   setCount              Int      @default(0)
