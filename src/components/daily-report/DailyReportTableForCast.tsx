@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { FaTrash } from 'react-icons/fa';
 import React from 'react';
 import { useMenuState } from '@/hooks/useMenuState';
@@ -11,35 +11,18 @@ import DeletePerformanceDialog from './DeletePerformanceDialog';
 type DailyReportTableProps = {
   date: { year: number; month: number; day: number };
   storeId: number;
+  castDailyPerformances: CastDailyPerformance[];
+  setCastDailyPerformances: React.Dispatch<React.SetStateAction<CastDailyPerformance[]>>; 
 };
 
-export default function DailyReportTable({ date, storeId }: DailyReportTableProps) {
+export default function DailyReportTable({ date, storeId, castDailyPerformances, setCastDailyPerformances }: DailyReportTableProps) {
   const { isSidebarCollapsed } = useMenuState(); // サイドバーの状態を取得
-  const [castDailyPerformances, setCastDailyPerformances] = useState<CastDailyPerformance[]>([]);
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   
   // 削除ダイアログ用のステートを追加
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [performanceToDelete, setPerformanceToDelete] = useState<CastDailyPerformance | null>(null);
-  
-  useEffect(() => {
-    const formattedDate = `${date.year}-${String(date.month).padStart(2, '0')}-${String(
-      date.day
-    ).padStart(2, '0')}`;
-    async function fetchReportData() {
-      try {
-        const response = await fetch(`/api/daily-report/${formattedDate}?storeId=${storeId}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch daily report data');
-        }
-        const data = await response.json();
-        setCastDailyPerformances(data);
-      } catch (error) {
-        console.error('Error fetching daily report data:', error);
-      }
-    }
-    fetchReportData();
-  }, [date, storeId]);
   
   // メインテーブルのヘッダー参照
   const mainHeaderRef = useRef<HTMLTableRowElement>(null);

@@ -67,5 +67,7 @@ export type CastDailyPerformance = {
   
   // キャスト情報
   hourlyRate: number;
+  monthlySalary: number;
+  salarySystem: number;
   castName: string;
 };
