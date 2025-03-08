@@ -165,7 +165,7 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
   
   return (
     <>
-      <div className="bg-white rounded-md shadow-sm p-4 mb-4 overflow-x-auto">
+      <div className="bg-white rounded-md shadow-sm p-4 mb-20 overflow-x-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-6">
             {/* 入金項目 */}
@@ -457,13 +457,16 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
         </div>
       </div>
       
-      <div className={`mt-4 flex justify-center space-x-4 ${isSidebarCollapsed ? 'max-w-[calc(100vw-90px)]' : 'max-w-[calc(100vw-240px)]'}`}>
-        <button
-          onClick={handleSave}
-          className="px-4 py-2 bg-[#454545] text-white rounded-md font-medium hover:bg-[#353535] text-[14px]"
-        >
-          保存する
-        </button>
+      {/* 固定フッター - サイドバーの幅を考慮 */}
+      <div className={`fixed bottom-0 ${isSidebarCollapsed ? 'left-[50px]' : 'left-[200px]'} right-0 bg-white/50 backdrop-blur-sm pt-2 pb-4 z-10`}>
+        <div className="flex justify-center">
+          <button
+            onClick={handleSave}
+            className="px-6 py-2 bg-[#454545] text-white rounded-md font-medium hover:bg-[#353535] text-[14px]"
+          >
+            保存する
+          </button>
+        </div>
       </div>
     </>
   );
