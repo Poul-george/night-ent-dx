@@ -259,7 +259,7 @@ export default function DailyReportTable({ date, storeId }: DailyReportTableProp
 
   return (
     <>
-      <div className={`overflow-x-auto ${isSidebarCollapsed ? 'max-w-[calc(100vw-90px)]' : 'max-w-[calc(100vw-240px)]'}`}>
+      <div className={`overflow-x-auto`}>
         <div className="flex">
           {/* 固定列（キャスト名） */}
           <div className="w-[150px] flex-shrink-0">
