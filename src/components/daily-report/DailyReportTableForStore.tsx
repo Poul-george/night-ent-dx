@@ -107,7 +107,7 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
       operatingProfitMargin: operatingProfitMargin,
       totalSales: prev.cashSales + prev.cardSales + prev.receivables // 現金売上とカード売上と売掛金の合計
     }));
-  }, [castDailyPerformances]);
+  }, [castDailyPerformances, storeReport.miscExpenses, storeReport.otherExpenses]);
   
   // 入力ハンドラー
   const handleInputChange = (field: keyof StoreDailyPerformance, value: string) => {
