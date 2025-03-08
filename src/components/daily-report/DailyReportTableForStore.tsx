@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useMenuState } from '@/hooks/useMenuState';
 import { CastDailyPerformance, StoreDailyPerformance } from '@/types/type';
+import { formatNumber, formatPercent } from './utils/commonUtils';
+import { calculateReportValues } from './utils/storeReportCalculations';
 
 type DailyReportTableForStoreProps = {
   date: { year: number; month: number; day: number };
@@ -50,85 +52,18 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
     transferredCash: 0
   });
   
-  // 計算ロジックを共通化した関数
-  const calculateReportValues = useCallback((reportData: StoreDailyPerformance) => {
-    // キャスト売上合計の計算
-    const castSalesTotal = castDailyPerformances.reduce((sum, cast) => {
-      return sum + cast.drinkSubtotal + cast.bottleSubtotal + cast.foodSubtotal;
-    }, 0);
-    
-    // キャスト給与合計の計算
-    const castSalaryTotal = castDailyPerformances.reduce((sum, cast) => {
-      return sum + cast.timeReward + cast.drinkSubtotalBack + cast.bottleSubtotalBack + cast.foodSubtotalBack + cast.bonus;
-    }, 0);
-    
-    // キャスト日払い合計の計算
-    const castDailyPaymentTotal = castDailyPerformances.reduce((sum, cast) => {
-      if (cast.salarySystem === 1) {
-        return sum + cast.dailyPayment;
-      }
-      return sum;
-    }, 0);
-    
-    // 社員日払い合計の計算
-    const staffDailyPaymentTotal = castDailyPerformances.reduce((sum, cast) => {
-      if (cast.salarySystem === 0) {
-        return sum + cast.dailyPayment;
-      }
-      return sum;
-    }, 0);
-    
-    // 総売上の計算（現金売上、カード売上、売掛金の合計）
-    const totalSales = reportData.cashSales + reportData.cardSales + reportData.receivables;
-    
-    // 人件費率の計算 (小数点第一位まで、第二位を四捨五入)
-    const laborCostRatio = castSalesTotal > 0 ? Math.round((castSalaryTotal / castSalesTotal) * 1000) / 10 : 0;
-    
-    // 粗利益の計算
-    const grossProfit = totalSales - reportData.miscExpenses;
-    
-    // 粗利益率の計算 (小数点第一位まで、第二位を四捨五入)
-    const grossProfitMargin = totalSales > 0 ? Math.round((grossProfit / totalSales) * 1000) / 10 : 0;
-    
-    // 営業利益の計算
-    const operatingProfit = grossProfit - (reportData.otherExpenses + castSalaryTotal);
-    
-    // 営業利益率の計算 (小数点第一位まで、第二位を四捨五入)
-    const operatingProfitMargin = totalSales > 0 ? Math.round((operatingProfit / totalSales) * 1000) / 10 : 0;
-    
-    // 客単価の計算
-    const averageSpendPerCustomer = reportData.customerCount > 0 
-      ? Math.round(castSalesTotal / reportData.customerCount) 
-      : 0;
-    
-    // 計算結果をオブジェクトとして返す
-    return {
-      castSales: castSalesTotal,
-      castSalary: castSalaryTotal,
-      castDailyPayment: castDailyPaymentTotal,
-      employeeDailyPayment: staffDailyPaymentTotal,
-      laborCostRatio: laborCostRatio,
-      totalSales: totalSales,
-      grossProfit: grossProfit,
-      grossProfitMargin: grossProfitMargin,
-      operatingProfit: operatingProfit,
-      operatingProfitMargin: operatingProfitMargin,
-      averageSpendPerCustomer: averageSpendPerCustomer
-    };
-  }, [castDailyPerformances]);
-  
   // 初期化と再計算
   const updateDailyStoreReport = useCallback(() => {
     setDailyStoreReport(prev => {
-      const calculatedValues = calculateReportValues(prev);
+      const calculatedValues = calculateReportValues(prev, castDailyPerformances);
       return { ...prev, ...calculatedValues };
     });
-  }, [calculateReportValues]);
+  }, [castDailyPerformances]);
   
   // 初期化
   useEffect(() => {
     updateDailyStoreReport();
-  }, []);
+  }, [updateDailyStoreReport]);
   
   // 入力ハンドラー
   const handleInputChange = (field: keyof StoreDailyPerformance, value: string) => {
@@ -140,7 +75,7 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
       const updated = { ...prev, [field]: numberValue };
       
       // 共通の計算ロジックを使用して値を計算
-      const calculatedValues = calculateReportValues(updated);
+      const calculatedValues = calculateReportValues(updated, castDailyPerformances);
       
       // 更新された値と計算結果を組み合わせて返す
       return { ...updated, ...calculatedValues };
@@ -169,16 +104,6 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
       console.error('Error saving store daily report:', error);
       alert('保存に失敗しました');
     }
-  };
-  
-  // 数値のフォーマット（カンマ区切り）
-  const formatNumber = (num: number) => {
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  };
-  
-  // パーセント表示用フォーマット
-  const formatPercent = (num: number) => {
-    return `${num.toFixed(1)}%`;
   };
   
   // 入力フィールドのスタイル

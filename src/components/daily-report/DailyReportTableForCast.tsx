@@ -7,6 +7,13 @@ import { useMenuState } from '@/hooks/useMenuState';
 import { CastDailyPerformance } from '@/types/type';
 import CastSelectModal from './CastSelectModal';
 import DeletePerformanceDialog from './DeletePerformanceDialog';
+import { formatNumber } from './utils/commonUtils';
+import { 
+  splitTime, 
+  combineTime, 
+  calculateWorkHours,
+  calculateTimeReward
+} from './utils/castReportCalculations';
 
 type DailyReportTableProps = {
   date: { year: number; month: number; day: number };
@@ -28,53 +35,42 @@ export default function DailyReportTable({ date, storeId, castDailyPerformances,
   const mainHeaderRef = useRef<HTMLTableRowElement>(null);
   const subHeaderRef = useRef<HTMLTableRowElement>(null);
   
-  // 時間と分を分割する関数
-  const splitTime = (timeString: string) => {
-    const [hours, minutes] = timeString.split(':').map(part => parseInt(part, 10));
-    return { hours: hours || 0, minutes: minutes || 0 };
-  };
-
-  // 時間と分を結合する関数
-  const combineTime = (hours: number, minutes: number) => {
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-  };
-
-  // 時間を分に変換する関数
-  const timeToMinutes = (timeString: string) => {
-    const { hours, minutes } = splitTime(timeString);
-    return hours * 60 + minutes;
-  };
-
-  // 分を時間形式に変換する関数
-  const minutesToTime = (totalMinutes: number) => {
-    const hours = Math.floor(Math.abs(totalMinutes) / 60);
-    const minutes = Math.abs(totalMinutes) % 60;
-    const sign = totalMinutes < 0 ? '-' : '';
-    return `${sign}${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-  };
-
-  // 勤務時間を計算する関数
-  const calculateWorkHours = (startTime: string, endTime: string, overtime: number) => {
-    const startMinutes = timeToMinutes(startTime);
-    let endMinutes = timeToMinutes(endTime);
-    
-    // 終了時間が開始時間より前の場合、翌日とみなす
-    if (endMinutes < startMinutes) {
-      endMinutes += 24 * 60; // 24時間分を加算
+  // 時間入力のハンドラー
+  const handleTimeInput = (id: number, field: keyof CastDailyPerformance, value: string) => {
+    // 時間入力のバリデーション（HH:MM形式のみ許可）
+    if (!/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(value) && value !== '') {
+      return;
     }
     
-    // 基本勤務時間（分）
-    const baseWorkMinutes = endMinutes - startMinutes;
-    // 時間外を加算
-    const totalWorkMinutes = baseWorkMinutes + overtime;
-    
-    return minutesToTime(totalWorkMinutes);
-  };
-
-  // 時間給与を計算する関数
-  const calculateTimeReward = (workHours: string, hourlyRate: number) => {
-    const workMinutes = timeToMinutes(workHours);
-    return Math.round((workMinutes / 60) * hourlyRate);
+    setCastDailyPerformances(prev => {
+      return prev.map(performance => {
+        if (performance.id === id) {
+          const updatedPerformance = { ...performance, [field]: value };
+          
+          // 勤務時間の自動計算
+          if (['startTime', 'endTime', 'overtime'].includes(field as string)) {
+            if (updatedPerformance.startTime && updatedPerformance.endTime) {
+              updatedPerformance.workHours = calculateWorkHours(
+                updatedPerformance.startTime, 
+                updatedPerformance.endTime, 
+                updatedPerformance.overtime
+              );
+              
+              // 時給計算
+              if (updatedPerformance.hourlyRate > 0) {
+                updatedPerformance.timeReward = calculateTimeReward(
+                  updatedPerformance.workHours,
+                  updatedPerformance.hourlyRate
+                );
+              }
+            }
+          }
+          
+          return updatedPerformance;
+        }
+        return performance;
+      });
+    });
   };
 
   // 時間変更ハンドラー
@@ -87,7 +83,7 @@ export default function DailyReportTable({ date, storeId, castDailyPerformances,
       }
     });
 
-    handleInputChange(castDailyPerformanceId, field, newTimeValue);
+    handleTimeInput(castDailyPerformanceId, field, newTimeValue);
   };
 
   // 分変更ハンドラー
@@ -100,7 +96,7 @@ export default function DailyReportTable({ date, storeId, castDailyPerformances,
       }
     });
 
-    handleInputChange(castDailyPerformanceId, field, newTimeValue);
+    handleTimeInput(castDailyPerformanceId, field, newTimeValue);
   };
 
   // 時間外入力のハンドラー
@@ -109,7 +105,7 @@ export default function DailyReportTable({ date, storeId, castDailyPerformances,
     const numericValue = value.replace(/[^\d-]/g, '');
     const overtime = numericValue ? parseInt(numericValue, 10) : 0;
 
-    handleInputChange(castId, 'overtime', overtime);
+    handleTimeInput(castId, 'overtime', overtime.toString());
   };
 
   // 時間オプション生成（0-23時）
@@ -233,11 +229,6 @@ export default function DailyReportTable({ date, storeId, castDailyPerformances,
       console.error('Error saving daily report:', error);
       alert('保存に失敗しました');
     }
-  };
-
-  // 数値のフォーマット（カンマ区切り）
-  const formatNumber = (num: number) => {
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   };
 
   return (
