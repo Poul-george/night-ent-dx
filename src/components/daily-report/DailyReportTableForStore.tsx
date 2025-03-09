@@ -52,6 +52,23 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
     transferredCash: 0
   });
   
+  // 日報データを取得する関数
+  const fetchStoreReport = useCallback(async () => {
+    try {
+      const formattedDate = `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`;
+      const response = await fetch(`/api/store-daily-report/${formattedDate}?storeId=${storeId}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch store daily report');
+      }
+      
+      const data = await response.json();
+      setDailyStoreReport(prev => ({ ...prev, ...data }));
+    } catch (error) {
+      console.error('Error fetching store daily report:', error);
+    }
+  }, [date, storeId]);
+  
   // 初期化と再計算
   const updateDailyStoreReport = useCallback(() => {
     setDailyStoreReport(prev => {
@@ -60,25 +77,29 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
     });
   }, [castDailyPerformances]);
   
-  // 初期化
+  // コンポーネントマウント時に日報データを取得
+  useEffect(() => {
+    fetchStoreReport();
+  }, []);
+  
+  // キャスト日報データが変更されたときに再計算
   useEffect(() => {
     updateDailyStoreReport();
-  }, [updateDailyStoreReport]);
+  }, [castDailyPerformances, updateDailyStoreReport]);
   
-  // 入力ハンドラー
+  // 入力フィールドのスタイル
+  const inputStyle = "w-full border border-[#454545] rounded text-right text-[14px] h-[30px] text-[#454545]";
+  
+  // 数値入力のハンドラー
   const handleInputChange = (field: keyof StoreDailyPerformance, value: string) => {
-    const numericValue = value.replace(/[^\d]/g, '');
-    const numberValue = numericValue ? parseInt(numericValue, 10) : 0;
+    // カンマを削除して数値に変換
+    const numericValue = value.replace(/,/g, '');
+    const parsedValue = numericValue === '' ? 0 : parseInt(numericValue, 10);
     
     setDailyStoreReport(prev => {
-      // 更新された値を含む新しいオブジェクトを作成
-      const updated = { ...prev, [field]: numberValue };
-      
-      // 共通の計算ロジックを使用して値を計算
-      const calculatedValues = calculateReportValues(updated, castDailyPerformances);
-      
-      // 更新された値と計算結果を組み合わせて返す
-      return { ...updated, ...calculatedValues };
+      const updatedReport = { ...prev, [field]: parsedValue };
+      const calculatedValues = calculateReportValues(updatedReport, castDailyPerformances);
+      return { ...updatedReport, ...calculatedValues };
     });
   };
   
@@ -105,9 +126,6 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
       alert('保存に失敗しました');
     }
   };
-  
-  // 入力フィールドのスタイル
-  const inputStyle = "w-full border border-gray-300 rounded p-1 text-right text-[14px] text-[#454545]";
   
   return (
     <>
