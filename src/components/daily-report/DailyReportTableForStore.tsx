@@ -63,29 +63,32 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
       }
       
       const data = await response.json();
-      setDailyStoreReport(prev => ({ ...prev, ...data }));
+      
+      // データをステートに設定
+      setDailyStoreReport(data);
+    
+      const calculatedValues = calculateReportValues(data, castDailyPerformances);
+      setDailyStoreReport(prev => ({ ...prev, ...calculatedValues }));
     } catch (error) {
       console.error('Error fetching store daily report:', error);
     }
-  }, [date, storeId]);
+  }, [date, storeId, castDailyPerformances]);
   
-  // 初期化と再計算
-  const updateDailyStoreReport = useCallback(() => {
-    setDailyStoreReport(prev => {
-      const calculatedValues = calculateReportValues(prev, castDailyPerformances);
-      return { ...prev, ...calculatedValues };
-    });
-  }, [castDailyPerformances]);
+  // 計算処理を行う関数
+  const calculateReport = useCallback(() => {
+    const calculatedValues = calculateReportValues(dailyStoreReport, castDailyPerformances);
+    setDailyStoreReport(prev => ({ ...prev, ...calculatedValues }));
+  }, [dailyStoreReport, castDailyPerformances]);
   
   // コンポーネントマウント時に日報データを取得
   useEffect(() => {
     fetchStoreReport();
-  }, []);
+  }, [fetchStoreReport]);
   
   // キャスト日報データが変更されたときに再計算
   useEffect(() => {
-    updateDailyStoreReport();
-  }, [castDailyPerformances, updateDailyStoreReport]);
+    calculateReport();
+  }, [castDailyPerformances]);
   
   // 入力フィールドのスタイル
   const inputStyle = "w-full border border-[#454545] rounded text-right text-[14px] h-[30px] text-[#454545]";
