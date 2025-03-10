@@ -74,21 +74,10 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
     }
   }, [date, storeId, castDailyPerformances]);
   
-  // 計算処理を行う関数
-  const calculateReport = useCallback(() => {
-    const calculatedValues = calculateReportValues(dailyStoreReport, castDailyPerformances);
-    setDailyStoreReport(prev => ({ ...prev, ...calculatedValues }));
-  }, [dailyStoreReport, castDailyPerformances]);
-  
   // コンポーネントマウント時に日報データを取得
   useEffect(() => {
     fetchStoreReport();
   }, [fetchStoreReport]);
-  
-  // キャスト日報データが変更されたときに再計算
-  useEffect(() => {
-    calculateReport();
-  }, [castDailyPerformances]);
   
   // 入力フィールドのスタイル
   const inputStyle = "w-full border border-[#454545] rounded text-right text-[14px] h-[30px] text-[#454545]";
