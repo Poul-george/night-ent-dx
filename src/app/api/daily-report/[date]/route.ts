@@ -69,6 +69,8 @@ export async function GET(
         overtime: Number(performance.overtime),
         workHours: workHours,
         hourlyRate: Number(performance.cast.hourlyWage),
+        monthlySalary: Number(performance.cast.monthlySalary),
+        salarySystem: Number(performance.cast.salarySystem),
         timeReward: timeReward,
         welfareCost: Number(performance.welfareCost),
         dailyPayment: Number(performance.dailyPayment),

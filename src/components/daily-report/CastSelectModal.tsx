@@ -82,6 +82,8 @@ export default function CastSelectModal({
         overtime: 0,
         workHours: '00:00', // 自動計算されるが初期値を設定
         hourlyRate: selectedCast.hourlyWage || 0,
+        monthlySalary: selectedCast.monthlySalary || 0,
+        salarySystem: selectedCast.salarySystem || 0,
         timeReward: 0,
         welfareCost: 0,
         dailyPayment: 0,

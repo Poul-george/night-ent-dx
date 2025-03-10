@@ -67,5 +67,44 @@ export type CastDailyPerformance = {
   
   // キャスト情報
   hourlyRate: number;
+  monthlySalary: number;
+  salarySystem: number;
   castName: string;
 };
+
+export type StoreDailyPerformance = {
+  id: number;
+  storeId: number;
+  performanceDate: Date;
+
+  // 入金項目 (Incoming Funds)
+  totalSales: number; // 総売上
+  cashSales: number; // 現金売上 DB
+  cardSales: number; // クレジット売上 DB
+  receivablesCollection: number; // 売掛金回収 DB
+  receivables: number; // 売掛金 DB
+
+  // 出金項目 (Outgoing Funds)
+  miscExpenses: number; // 雑費 DB
+  otherExpenses: number; // その他の出金 DB
+  castDailyPayment: number; // キャスト日払い
+  employeeDailyPayment: number; // 従業員日払い
+
+  // 売上関連 (Sales Related)
+  castSales: number; // キャスト売上
+  castSalary: number; // キャスト給与
+  laborCostRatio: number; // 人件費率
+  setCount: number; // セット数 DB
+  customerCount: number; // 客数 DB
+  averageSpendPerCustomer: number; // 客単価
+  grossProfit: number; // 粗利益
+  grossProfitMargin: number; // 粗利益率
+  operatingProfit: number; // 営業利益
+  operatingProfitMargin: number; // 営業利益率
+
+  // 現金関連 (Cash Related)
+  actualCash: number; // 実際の現金 DB
+  coinCarryover: number; // 小銭繰越 DB
+  transferredCash: number; // 移動現金 DB
+};
+
