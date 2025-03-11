@@ -40,7 +40,7 @@ export const calculateReportValues = (
   const totalSales = Number(reportData.cashSales) + Number(reportData.cardSales) + Number(reportData.receivables);
   
   // 人件費率の計算 (小数点第一位まで、第二位を四捨五入)
-  const laborCostRatio = castSalesTotal > 0 ? Math.round((castSalaryTotal / castSalesTotal) * 1000) / 10 : 0;
+  const laborCostRatio = totalSales > 0 ? Math.round((castSalaryTotal / totalSales) * 1000) / 10 : 0;
   
   // 粗利益の計算
   const grossProfit = totalSales - Number(reportData.miscExpenses);
@@ -56,7 +56,7 @@ export const calculateReportValues = (
   
   // 客単価の計算
   const averageSpendPerCustomer = Number(reportData.customerCount) > 0 
-    ? Math.round(castSalesTotal / Number(reportData.customerCount)) 
+    ? Math.round(totalSales / Number(reportData.customerCount)) 
     : 0;
   
   // 計算結果をオブジェクトとして返す
