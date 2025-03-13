@@ -140,6 +140,9 @@ export async function GET(
           },
         },
       });
+      console.log("storeId ", storeId);
+      console.log("performanceDate ", performanceDate);
+      console.log("storeReportForDB ", storeReportForDB);
 
       if (storeReportForDB) {
         storeReport = {
@@ -170,6 +173,8 @@ export async function GET(
           laborCostRatio: 0,//人件費率
         } 
       }
+
+      console.log("storeReport ", storeReport);
     } catch (error) {
       console.error('Error finding store report:', error);
       // エラーが発生した場合は空のデータを返す
