@@ -23,11 +23,9 @@ export async function POST(
     
     // 日付のパース（例： "2024-03-10" → new Date("2024-03-10")）
     const performanceDate = new Date(date);
-
-    let result;
     
     // 既存レコードがあるかは分からないので、upsert を実施（ここでは id: 0 を利用して存在しないレコードの場合 create する）
-    result = await prisma.storeDailyPerformance.upsert({
+    const result = await prisma.storeDailyPerformance.upsert({
       where: { id: storeReport.id > 0 ? storeReport.id : 0 },
       update: {
         // 入金項目
