@@ -19,87 +19,63 @@ export async function POST(
     }
 
     // リクエストボディを取得
-    const storeReport = await request.json();
+    const storeReport: StoreDailyPerformance = await request.json();
     
-    // 日付をパース
-    const [year, month, day] = date.split('-').map(Number);
-    const performanceDate = new Date(year, month - 1, day);
-    
-    // 既存の日報を検索
-    let existingReport = null;
-    try {
-      existingReport = await prisma.storeDailyPerformance.findFirst({
-        where: {
-          storeId: Number(storeId),
-          performanceDate: {
-            gte: new Date(new Date(performanceDate).setHours(0, 0, 0, 0)),
-            lt: new Date(new Date(performanceDate).setHours(23, 59, 59, 999)),
-          },
-        },
-      });
-    } catch (error) {
-      console.error('Error finding existing report:', error);
-      // エラーが発生しても処理を続行（新規作成として扱う）
-    }
+    // 日付のパース（例： "2024-03-10" → new Date("2024-03-10")）
+    const performanceDate = new Date(date);
 
     let result;
     
-    if (existingReport) {
-      // 既存の日報を更新
-      result = await prisma.storeDailyPerformance.update({
-        where: { id: existingReport.id },
-        data: {
-          // 入金項目
-          cashSales: Number(storeReport.cashSales),
-          cardSales: Number(storeReport.cardSales),
-          receivables: Number(storeReport.receivables),
-          receivablesCollection: Number(storeReport.receivablesCollection),
-          
-          // 出金項目
-          miscExpenses: Number(storeReport.miscExpenses),
-          otherExpenses: Number(storeReport.otherExpenses),
-          
-          // 売上関連
-          setCount: Number(storeReport.setCount),
-          customerCount: Number(storeReport.customerCount),
-          
-          // 現金関連
-          actualCash: Number(storeReport.actualCash),
-          coinCarryover: Number(storeReport.coinCarryover),
-          transferredCash: Number(storeReport.transferredCash),
-          
-          // 更新情報
-          updatedAt: new Date(),
-        },
-      });
-    } else {
-      // 新規日報を作成
-      result = await prisma.storeDailyPerformance.create({
-        data: {
-          storeId: Number(storeId),
-          performanceDate: performanceDate,
-          
-          // 入金項目
-          cashSales: Number(storeReport.cashSales),
-          cardSales: Number(storeReport.cardSales),
-          receivables: Number(storeReport.receivables),
-          receivablesCollection: Number(storeReport.receivablesCollection),
-          
-          // 出金項目
-          miscExpenses: Number(storeReport.miscExpenses),
-          otherExpenses: Number(storeReport.otherExpenses),
-          
-          // 売上関連
-          setCount: Number(storeReport.setCount),
-          customerCount: Number(storeReport.customerCount),
-          
-          // 現金関連
-          actualCash: Number(storeReport.actualCash),
-          coinCarryover: Number(storeReport.coinCarryover),
-          transferredCash: Number(storeReport.transferredCash),
-        },
-      });
-    }
+    // 既存レコードがあるかは分からないので、upsert を実施（ここでは id: 0 を利用して存在しないレコードの場合 create する）
+    result = await prisma.storeDailyPerformance.upsert({
+      where: { id: storeReport.id > 0 ? storeReport.id : 0 },
+      update: {
+        // 入金項目
+        cashSales: Number(storeReport.cashSales),
+        cardSales: Number(storeReport.cardSales),
+        receivables: Number(storeReport.receivables),
+        receivablesCollection: Number(storeReport.receivablesCollection),
+        
+        // 出金項目
+        miscExpenses: Number(storeReport.miscExpenses),
+        otherExpenses: Number(storeReport.otherExpenses),
+        
+        // 売上関連
+        setCount: Number(storeReport.setCount),
+        customerCount: Number(storeReport.customerCount),
+        
+        // 現金関連
+        actualCash: Number(storeReport.actualCash),
+        coinCarryover: Number(storeReport.coinCarryover),
+        transferredCash: Number(storeReport.transferredCash),
+        
+        // 更新情報
+        updatedAt: new Date(),
+      },
+      create: {
+        storeId: Number(storeId),
+        performanceDate: performanceDate,
+        
+        // 入金項目
+        cashSales: Number(storeReport.cashSales),
+        cardSales: Number(storeReport.cardSales),
+        receivables: Number(storeReport.receivables),
+        receivablesCollection: Number(storeReport.receivablesCollection),
+        
+        // 出金項目
+        miscExpenses: Number(storeReport.miscExpenses),
+        otherExpenses: Number(storeReport.otherExpenses),
+        
+        // 売上関連
+        setCount: Number(storeReport.setCount),
+        customerCount: Number(storeReport.customerCount),
+        
+        // 現金関連
+        actualCash: Number(storeReport.actualCash),
+        coinCarryover: Number(storeReport.coinCarryover),
+        transferredCash: Number(storeReport.transferredCash),
+      },
+    });
 
     return NextResponse.json(result);
   } catch (error) {
