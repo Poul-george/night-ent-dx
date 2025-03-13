@@ -129,9 +129,9 @@ export async function GET(
     const performanceDate = new Date(year, month - 1, day);
     
     // 日報を検索（指定日のもの）
-    let storeReport = null;
+    let storeReport: StoreDailyPerformance | null = null;
     try {
-      storeReport = await prisma.storeDailyPerformance.findFirst({
+      const storeReportForDB = await prisma.storeDailyPerformance.findFirst({
         where: {
           storeId: Number(storeId),
           performanceDate: {
@@ -140,6 +140,36 @@ export async function GET(
           },
         },
       });
+
+      if (storeReportForDB) {
+        storeReport = {
+          id: storeReportForDB.id,
+          storeId: storeReportForDB.storeId,
+          performanceDate: storeReportForDB.performanceDate,
+          totalSales: 0, //総売上
+          cashSales: Number(storeReportForDB.cashSales),//現金売上
+          cardSales: Number(storeReportForDB.cardSales),//カード売上
+          receivablesCollection: Number(storeReportForDB.receivablesCollection),//売掛金回収額
+          receivables: Number(storeReportForDB.receivables),//売掛金残高
+          miscExpenses: Number(storeReportForDB.miscExpenses),//雑費
+          otherExpenses: Number(storeReportForDB.otherExpenses),//その他経費
+          setCount: Number(storeReportForDB.setCount),//組数
+          customerCount: Number(storeReportForDB.customerCount),//客数
+          actualCash: Number(storeReportForDB.actualCash),//現金実績
+          coinCarryover: Number(storeReportForDB.coinCarryover),//硬貨回収額
+          transferredCash: Number(storeReportForDB.transferredCash),//振込額
+          castSales: 0,//キャスト売上
+          castSalary: 0,//キャスト給与
+          castDailyPayment: 0,//キャスト日払い
+          employeeDailyPayment: 0,//従業員日払い
+          averageSpendPerCustomer: 0,//客単価
+          grossProfit: 0,//粗利
+          grossProfitMargin: 0,//粗利率
+          operatingProfit: 0,//営業利益
+          operatingProfitMargin: 0,//営業利益率
+          laborCostRatio: 0,//人件費率
+        } 
+      }
     } catch (error) {
       console.error('Error finding store report:', error);
       // エラーが発生した場合は空のデータを返す
