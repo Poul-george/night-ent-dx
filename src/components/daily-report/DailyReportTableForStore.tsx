@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useMenuState } from '@/hooks/useMenuState';
 import { CastDailyPerformance, StoreDailyPerformance } from '@/types/type';
 import { formatNumber, formatPercent } from './utils/commonUtils';
-import { calculateReportValues } from './utils/storeReportCalculations';
+import { calculateDailyReportValues } from './utils/storeReportCalculations';
 
 type DailyReportTableForStoreProps = {
   date: { year: number; month: number; day: number };
@@ -12,29 +12,20 @@ type DailyReportTableForStoreProps = {
   castDailyPerformances: CastDailyPerformance[];
 };
 
-export default function DailyReportTableForStore({ date, storeId, castDailyPerformances }: DailyReportTableForStoreProps) {
-  const { isSidebarCollapsed } = useMenuState();
-  
-  // 店舗日報データのステート
-  const [dailyStoreReport, setDailyStoreReport] = useState<StoreDailyPerformance>({
+const getInitializedData = (storeId: number, date: { year: number; month: number; day: number }): StoreDailyPerformance => {
+  return {
     id: 0,
     storeId: storeId,
     performanceDate: new Date(`${date.year}-${date.month}-${date.day}`),
-    
-    // 入金項目
     totalSales: 0,
     cashSales: 0,
     cardSales: 0,
     receivablesCollection: 0,
     receivables: 0,
-    
-    // 出金項目
     miscExpenses: 0,
     otherExpenses: 0,
     castDailyPayment: 0,
     employeeDailyPayment: 0,
-    
-    // 売上関連
     castSales: 0,
     castSalary: 0,
     laborCostRatio: 0,
@@ -45,14 +36,20 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
     grossProfitMargin: 0,
     operatingProfit: 0,
     operatingProfitMargin: 0,
-    
-    // 現金関連
     actualCash: 0,
     coinCarryover: 0,
     transferredCash: 0
-  });
+  };
+};
+
+export default function DailyReportTableForStore({ date, storeId, castDailyPerformances }: DailyReportTableForStoreProps) {
+  const { isSidebarCollapsed } = useMenuState();
   
-  // 日報データを取得する関数
+  // 店舗日報データのステート
+  const [dailyStoreReport, setDailyStoreReport] = useState<StoreDailyPerformance>(getInitializedData(storeId, date));
+  const [monthlyStoreReport, setMonthlyStoreReport] = useState<StoreDailyPerformance>(getInitializedData(storeId, date));
+  
+  // 日報、月報データを取得する関数
   const fetchStoreReport = useCallback(async () => {
     try {
       const formattedDate = `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`;
@@ -64,11 +61,17 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
       
       const data = await response.json();
       
+      // データが存在する場合はそれを使用し、存在しない場合は初期化されたデータを使用
+      const reportData = data.storeReport || getInitializedData(storeId, date);
+      const monthlyReportData = data.monthlyReport || getInitializedData(storeId, date);
       // データをステートに設定
-      setDailyStoreReport(data);
-    
-      const calculatedValues = calculateReportValues(data, castDailyPerformances);
+      setDailyStoreReport(reportData);
+      setMonthlyStoreReport(monthlyReportData);
+      
+      // 計算処理を実行
+      const calculatedValues = calculateDailyReportValues(reportData, castDailyPerformances);
       setDailyStoreReport(prev => ({ ...prev, ...calculatedValues }));
+      
     } catch (error) {
       console.error('Error fetching store daily report:', error);
     }
@@ -90,7 +93,7 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
     
     setDailyStoreReport(prev => {
       const updatedReport = { ...prev, [field]: parsedValue };
-      const calculatedValues = calculateReportValues(updatedReport, castDailyPerformances);
+      const calculatedValues = calculateDailyReportValues(updatedReport, castDailyPerformances);
       return { ...updatedReport, ...calculatedValues };
     });
   };
@@ -139,7 +142,7 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
                   <tr>
                     <td className="border border-gray-300 py-2 px-3">総売上</td>
                     <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(dailyStoreReport.totalSales)}</td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(0)}</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(monthlyStoreReport.totalSales)}</td>
                   </tr>
                   <tr>
                     <td className="border border-gray-300 py-2 px-3">現金売上</td>
@@ -154,7 +157,7 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
                         />
                       </div>
                     </td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(0)}</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(monthlyStoreReport.cashSales)}</td>
                   </tr>
                   <tr>
                     <td className="border border-gray-300 py-2 px-3">カード売上</td>
@@ -169,7 +172,7 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
                         />
                       </div>
                     </td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(0)}</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(monthlyStoreReport.cardSales)}</td>
                   </tr>
                   <tr>
                     <td className="border border-gray-300 py-2 px-3">売掛金回収</td>
@@ -184,7 +187,7 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
                         />
                       </div>
                     </td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(0)}</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(monthlyStoreReport.receivablesCollection)}</td>
                   </tr>
                   <tr>
                     <td className="border border-gray-300 py-2 px-3">売掛金</td>
@@ -199,7 +202,7 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
                         />
                       </div>
                     </td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(0)}</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(monthlyStoreReport.receivables)}</td>
                   </tr>
                 </tbody>
               </table>
@@ -230,7 +233,7 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
                         />
                       </div>
                     </td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(0)}</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(monthlyStoreReport.miscExpenses)}</td>
                   </tr>
                   <tr>
                     <td className="border border-gray-300 py-2 px-3">その他経費</td>
@@ -245,17 +248,17 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
                         />
                       </div>
                     </td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(0)}</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(monthlyStoreReport.otherExpenses)}</td>
                   </tr>
                   <tr>
                     <td className="border border-gray-300 py-2 px-3">キャスト日払</td>
                     <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(dailyStoreReport.castDailyPayment)}</td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(0)}</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(monthlyStoreReport.castDailyPayment)}</td>
                   </tr>
                   <tr>
                     <td className="border border-gray-300 py-2 px-3">社員日払い</td>
                     <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(dailyStoreReport.employeeDailyPayment)}</td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(0)}</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(monthlyStoreReport.employeeDailyPayment)}</td>
                   </tr>
                 </tbody>
               </table>
@@ -278,17 +281,17 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
                   <tr>
                     <td className="border border-gray-300 py-2 px-3">キャスト売上</td>
                     <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(dailyStoreReport.castSales)}</td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(0)}</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(monthlyStoreReport.castSales)}</td>
                   </tr>
                   <tr>
                     <td className="border border-gray-300 py-2 px-3">キャスト給与</td>
                     <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(dailyStoreReport.castSalary)}</td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(0)}</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(monthlyStoreReport.castSalary)}</td>
                   </tr>
                   <tr>
                     <td className="border border-gray-300 py-2 px-3">人件費率</td>
                     <td className="border border-gray-300 py-2 px-3 text-right">{formatPercent(dailyStoreReport.laborCostRatio)}</td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">{formatPercent(0)}</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">{formatPercent(monthlyStoreReport.laborCostRatio)}</td>
                   </tr>
                   <tr>
                     <td className="border border-gray-300 py-2 px-3">客組数</td>
@@ -303,7 +306,7 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
                         <span className="text-[#454545] ml-1">組</span>
                       </div>
                     </td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">0組</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">{formatNumber(monthlyStoreReport.setCount)}組</td>
                   </tr>
                   <tr>
                     <td className="border border-gray-300 py-2 px-3">客数</td>
@@ -318,32 +321,32 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
                         <span className="text-[#454545] ml-1">人</span>
                       </div>
                     </td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">0人</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">{formatNumber(monthlyStoreReport.customerCount)}人</td>
                   </tr>
                   <tr>
                     <td className="border border-gray-300 py-2 px-3">客単価</td>
                     <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(dailyStoreReport.averageSpendPerCustomer)}</td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(0)}</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(monthlyStoreReport.averageSpendPerCustomer)}</td>
                   </tr>
                   <tr>
                     <td className="border border-gray-300 py-2 px-3">粗利益</td>
                     <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(dailyStoreReport.grossProfit)}</td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(0)}</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(monthlyStoreReport.grossProfit)}</td>
                   </tr>
                   <tr>
                     <td className="border border-gray-300 py-2 px-3">粗利益率</td>
                     <td className="border border-gray-300 py-2 px-3 text-right">{formatPercent(dailyStoreReport.grossProfitMargin)}</td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">{formatPercent(0)}</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">{formatPercent(monthlyStoreReport.grossProfitMargin)}</td>
                   </tr>
                   <tr>
                     <td className="border border-gray-300 py-2 px-3">営業利益</td>
                     <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(dailyStoreReport.operatingProfit)}</td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(0)}</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(monthlyStoreReport.operatingProfit)}</td>
                   </tr>
                   <tr>
                     <td className="border border-gray-300 py-2 px-3">営業利益率</td>
                     <td className="border border-gray-300 py-2 px-3 text-right">{formatPercent(dailyStoreReport.operatingProfitMargin)}</td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">{formatPercent(0)}</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">{formatPercent(monthlyStoreReport.operatingProfitMargin)}</td>
                   </tr>
                 </tbody>
               </table>
@@ -404,7 +407,7 @@ export default function DailyReportTableForStore({ date, storeId, castDailyPerfo
                         />
                       </div>
                     </td>
-                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(0)}</td>
+                    <td className="border border-gray-300 py-2 px-3 text-right">¥{formatNumber(monthlyStoreReport.transferredCash)}</td>
                   </tr>
                 </tbody>
               </table>
