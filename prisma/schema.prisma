@@ -69,7 +69,7 @@ model CastDailyPerformance {
   id                Int      @id @default(autoincrement())
   castId            Int
   storeId           Int
-  performanceDate   DateTime @db.Date
+  performanceDate   DateTime
 
   // 勤怠関連
   startTime         String @default("00:00")
@@ -111,7 +111,7 @@ model CastDailyPerformance {
 model StoreDailyPerformance {
   id                    Int      @id @default(autoincrement())
   storeId               Int      @default(0)
-  performanceDate       DateTime @db.Date
+  performanceDate       DateTime
 
   // 入金項目 (Incoming Funds)
   cashSales             Decimal  @default(0) @db.Decimal(12,2)
