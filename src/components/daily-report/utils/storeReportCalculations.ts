@@ -6,7 +6,7 @@ import { CastDailyPerformance, StoreDailyPerformance } from '@/types/type';
  * @param castDailyPerformances キャスト日報データの配列
  * @returns 計算された値を含むオブジェクト
  */
-export const calculateReportValues = (
+export const calculateDailyReportValues = (
   reportData: StoreDailyPerformance,
   castDailyPerformances: CastDailyPerformance[]
 ) => {
