@@ -34,44 +34,6 @@ export default function DailyReportTable({ date, storeId, castDailyPerformances,
   // メインテーブルのヘッダー参照
   const mainHeaderRef = useRef<HTMLTableRowElement>(null);
   const subHeaderRef = useRef<HTMLTableRowElement>(null);
-  
-  // 時間入力のハンドラー
-  const handleTimeInput = (id: number, field: keyof CastDailyPerformance, value: string) => {
-    // 時間入力のバリデーション（HH:MM形式のみ許可）
-    if (!/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(value) && value !== '') {
-      return;
-    }
-    
-    setCastDailyPerformances(prev => {
-      return prev.map(performance => {
-        if (performance.id === id) {
-          const updatedPerformance = { ...performance, [field]: value };
-          
-          // 勤務時間の自動計算
-          if (['startTime', 'endTime', 'overtime'].includes(field as string)) {
-            if (updatedPerformance.startTime && updatedPerformance.endTime) {
-              updatedPerformance.workHours = calculateWorkHours(
-                updatedPerformance.startTime, 
-                updatedPerformance.endTime, 
-                updatedPerformance.overtime
-              );
-              
-              // 時給計算
-              if (updatedPerformance.hourlyRate > 0) {
-                updatedPerformance.timeReward = calculateTimeReward(
-                  updatedPerformance.workHours,
-                  updatedPerformance.hourlyRate
-                );
-              }
-            }
-          }
-          
-          return updatedPerformance;
-        }
-        return performance;
-      });
-    });
-  };
 
   // 時間変更ハンドラー
   const handleHourChange = (castDailyPerformanceId: number, field: 'startTime' | 'endTime', hours: number) => {
@@ -83,7 +45,7 @@ export default function DailyReportTable({ date, storeId, castDailyPerformances,
       }
     });
 
-    handleTimeInput(castDailyPerformanceId, field, newTimeValue);
+    handleInputChange(castDailyPerformanceId, field, newTimeValue);
   };
 
   // 分変更ハンドラー
@@ -96,16 +58,7 @@ export default function DailyReportTable({ date, storeId, castDailyPerformances,
       }
     });
 
-    handleTimeInput(castDailyPerformanceId, field, newTimeValue);
-  };
-
-  // 時間外入力のハンドラー
-  const handleOvertimeInput = (castId: number, value: string) => {
-    // 数値のみ許可（マイナス記号も許可）
-    const numericValue = value.replace(/[^\d-]/g, '');
-    const overtime = numericValue ? parseInt(numericValue, 10) : 0;
-
-    handleTimeInput(castId, 'overtime', overtime.toString());
+    handleInputChange(castDailyPerformanceId, field, newTimeValue);
   };
 
   // 時間オプション生成（0-23時）
@@ -355,7 +308,7 @@ export default function DailyReportTable({ date, storeId, castDailyPerformances,
                         <input
                           type="text"
                           value={castDailyPerformance.overtime}
-                          onChange={(e) => handleOvertimeInput(castDailyPerformance.id, e.target.value)}
+                          onChange={(e) => handleNumberInput(castDailyPerformance.id, 'overtime', e.target.value)}
                           className="w-full border border-[#454545] rounded text-center text-[14px] h-[30px] text-[#454545]"
                         />
                       </td>
