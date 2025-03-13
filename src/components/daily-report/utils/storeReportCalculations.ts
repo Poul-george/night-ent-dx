@@ -74,3 +74,33 @@ export const calculateDailyReportValues = (
     averageSpendPerCustomer: averageSpendPerCustomer
   };
 }; 
+
+export const getInitializedData = (storeId: number, date: { year: number; month: number; day: number }): StoreDailyPerformance => {
+  return {
+    id: 0,
+    storeId: storeId,
+    performanceDate: new Date(`${date.year}-${date.month}-${date.day}`),
+    totalSales: 0,
+    cashSales: 0,
+    cardSales: 0,
+    receivablesCollection: 0,
+    receivables: 0,
+    miscExpenses: 0,
+    otherExpenses: 0,
+    castDailyPayment: 0,
+    employeeDailyPayment: 0,
+    castSales: 0,
+    castSalary: 0,
+    laborCostRatio: 0,
+    setCount: 0,
+    customerCount: 0,
+    averageSpendPerCustomer: 0,
+    grossProfit: 0,
+    grossProfitMargin: 0,
+    operatingProfit: 0,
+    operatingProfitMargin: 0,
+    actualCash: 0,
+    coinCarryover: 0,
+    transferredCash: 0
+  };
+};
