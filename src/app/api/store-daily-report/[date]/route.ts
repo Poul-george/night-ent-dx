@@ -142,6 +142,8 @@ export async function GET(
       });
       console.log("storeId ", storeId);
       console.log("performanceDate ", performanceDate);
+      console.log("gte performanceDate ", new Date(new Date(performanceDate).setHours(0, 0, 0, 0)));
+      console.log("lt performanceDate ", new Date(new Date(performanceDate).setHours(23, 59, 59, 999)));
       console.log("storeReportForDB ", storeReportForDB);
 
       if (storeReportForDB) {
