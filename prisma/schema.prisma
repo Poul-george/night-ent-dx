@@ -69,7 +69,7 @@ model CastDailyPerformance {
   id                Int      @id @default(autoincrement())
   castId            Int
   storeId           Int
-  performanceDate   DateTime @db.Date
+  performanceDate   DateTime
 
   // 勤怠関連
   startTime         String @default("00:00")
@@ -106,4 +106,36 @@ model CastDailyPerformance {
   @@index([storeId, performanceDate], name: "idx_store_performance_date")
   @@index([castId, storeId, performanceDate], name: "idx_cast_store_performance_date")
   @@map("cast_daily_performance")
+}
+
+model StoreDailyPerformance {
+  id                    Int      @id @default(autoincrement())
+  storeId               Int      @default(0)
+  performanceDate       DateTime
+
+  // 入金項目 (Incoming Funds)
+  cashSales             Decimal  @default(0) @db.Decimal(12,2)
+  cardSales             Decimal  @default(0) @db.Decimal(12,2)
+  receivablesCollection Decimal  @default(0) @db.Decimal(12,2)
+  receivables           Decimal  @default(0) @db.Decimal(12,2)
+
+  // 出金項目 (Outgoing Funds)
+  miscExpenses          Decimal  @default(0) @db.Decimal(12,2)
+  otherExpenses         Decimal  @default(0) @db.Decimal(12,2)
+
+  // 売上関連 (Sales Related)
+  setCount              Int      @default(0)
+  customerCount         Int      @default(0)
+
+  // 現金関連 (Cash Related)
+  actualCash            Decimal  @default(0) @db.Decimal(12,2)
+  coinCarryover         Decimal  @default(0) @db.Decimal(12,2)
+  transferredCash       Decimal  @default(0) @db.Decimal(12,2)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @default(now()) @updatedAt
+  deletedAt             DateTime?
+
+  @@index([storeId, performanceDate], name: "idx_store_performance_date_for_store")
+  @@map("store_daily_performance")
 }
